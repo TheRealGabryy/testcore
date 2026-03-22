@@ -164,20 +164,26 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     propsContent.querySelectorAll<HTMLInputElement>('[data-prop]').forEach(input => {
       const prop = input.dataset.prop!;
 
-      const commit = () => {
+      const commitAndRerender = () => {
         updateClipProp(clip, prop, input.value, state.composition);
         state.emit('props:change');
       };
 
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { commit(); input.blur(); }
-        if (e.key === 'Escape') input.blur();
-      });
+      const commitLive = () => {
+        updateClipProp(clip, prop, input.value, state.composition);
+      };
 
-      input.addEventListener('blur', commit);
-
-      if (input.type === 'range' || input.type === 'color') {
-        input.addEventListener('input', commit);
+      if (input.type === 'range') {
+        input.addEventListener('input', commitLive);
+        input.addEventListener('change', commitAndRerender);
+      } else if (input.type === 'color') {
+        input.addEventListener('input', commitAndRerender);
+      } else {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { commitAndRerender(); input.blur(); }
+          if (e.key === 'Escape') input.blur();
+        });
+        input.addEventListener('blur', commitAndRerender);
       }
     });
   }
