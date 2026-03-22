@@ -779,7 +779,8 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   min-height: 0;
 }
 #color-panel { border-left: 1px solid var(--border); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--bg-active) transparent; }
-#keyframe-props-panel { border-left: 1px solid var(--border); }
+#keyframe-props-panel { border-left: 1px solid var(--border); overflow: hidden; }
+#keyframe-timeline-section { overflow: hidden; }
 #asset-folder-panel { border-right: 1px solid var(--border); }
 #asset-meta-panel { border-left: 1px solid var(--border); }
 
@@ -1085,3 +1086,140 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 .cg-empty svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
 .cg-empty p { font-size: 11px; line-height: 1.6; max-width: 160px; }
+
+/* ─── ANIMATION / KEYFRAME PANEL ─────────────────────────────────────────── */
+
+/* Empty state for both panels */
+.kf-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; padding: 20px;
+  text-align: center; color: var(--text-3);
+}
+.kf-empty svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.4; }
+.kf-empty p { font-size: 11px; line-height: 1.6; max-width: 170px; }
+
+/* ── Keyframe Props Panel (#keyframe-props-panel) ── */
+.kfp-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 10px; height: 34px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.kfp-type-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.07em;
+  background: var(--bg-active); color: var(--accent);
+  padding: 2px 5px; border-radius: 3px; text-transform: uppercase;
+  border: 1px solid var(--accent-dim);
+}
+.kfp-title { font-size: 11px; font-weight: 600; color: var(--text-2); }
+
+.kfp-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--bg-active) transparent;
+}
+
+.kfp-group {
+  padding: 4px 10px 2px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.kfp-row {
+  display: flex; align-items: center; gap: 0;
+  height: 24px; padding: 0 6px 0 4px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.08s;
+}
+.kfp-row:hover { background: var(--bg-hover); }
+
+.kfp-kf-btn {
+  width: 18px; height: 18px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-3); padding: 0;
+  transition: color 0.1s;
+}
+.kfp-kf-btn svg { width: 8px; height: 8px; fill: currentColor; stroke: none; pointer-events: none; }
+.kfp-kf-btn:hover { color: var(--accent); }
+.kfp-kf-btn--active { color: var(--accent) !important; }
+
+.kfp-prop-name {
+  flex: 1; font-size: 11px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding-left: 2px;
+}
+
+.kfp-val {
+  font-size: 10px; color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 50px; text-align: right; padding-right: 4px;
+  white-space: nowrap;
+}
+
+.kfp-nav { display: flex; gap: 1px; flex-shrink: 0; }
+.kfp-nav-btn {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-3); padding: 0;
+  transition: color 0.1s;
+}
+.kfp-nav-btn:hover:not(:disabled) { color: var(--text); }
+.kfp-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.kfp-nav-btn svg { width: 7px; height: 7px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+
+/* ── Keyframe Timeline (#keyframe-timeline-section) ── */
+.kft-header {
+  height: 24px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: #1e1f21;
+  overflow: hidden;
+}
+.kft-ruler-canvas { display: block; width: 100%; height: 24px; }
+
+.kft-body {
+  flex: 1; display: flex; overflow: hidden; min-height: 0;
+}
+
+.kft-labels {
+  flex-shrink: 0; overflow: hidden;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+}
+.kft-label-row {
+  height: 24px; display: flex; align-items: center;
+  padding: 0 8px; font-size: 10px; color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.kft-tracks-wrap { flex: 1; overflow: hidden; position: relative; }
+
+.kft-tracks-scroll {
+  width: 100%; height: 100%;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--bg-active) transparent;
+  position: relative;
+}
+
+.kft-tracks-canvas {
+  display: block;
+  position: absolute; top: 0; left: 0;
+  cursor: crosshair;
+}
+
+.kft-playhead {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: #e03a3a; pointer-events: none; z-index: 10;
+  transform: translateX(-0.5px);
+}
+.kft-playhead::before {
+  content: '';
+  position: absolute; top: 0; left: -4px;
+  width: 0; height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid #e03a3a;
+}

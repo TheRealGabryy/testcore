@@ -7,6 +7,7 @@ import { setupTimeline } from './timeline';
 import { setupRightPanel } from './right-panel';
 import { setupColorPanel } from './color-panel';
 import { createColorGradingOverlay } from './color-grading';
+import { setupAnimationPanel } from './animation-panel';
 
 export async function createEditor() {
   const composition = new core.Composition({ background: '#141416' });
@@ -20,6 +21,8 @@ export async function createEditor() {
   const rightPanel = document.querySelector('#right-panel') as HTMLElement;
   const colorPanel = document.querySelector('#color-panel') as HTMLElement;
   const playerEl = document.querySelector('#player') as HTMLElement;
+  const kfPropsPanel = document.querySelector('#keyframe-props-panel') as HTMLElement;
+  const kfTimelineSection = document.querySelector('#keyframe-timeline-section') as HTMLElement;
 
   async function handleExport() {
     const progressEl = document.querySelector('#export-progress') as HTMLElement;
@@ -155,4 +158,5 @@ export async function createEditor() {
   setupTimeline(timelineControlsBar, timelineArea, state);
   setupRightPanel(rightPanel, state);
   setupColorPanel(colorPanel, state, () => gradingOverlay.update());
+  setupAnimationPanel(kfPropsPanel, kfTimelineSection, state);
 }
