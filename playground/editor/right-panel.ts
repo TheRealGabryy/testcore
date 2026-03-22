@@ -1,3 +1,4 @@
+import * as core from '@diffusionstudio/core';
 import type { EditorState } from './state';
 
 function svgIcon(path: string): string {
@@ -31,20 +32,22 @@ const TYPE_ICONS: Record<string, string> = {
 const VISUAL_TYPES = new Set(['VIDEO', 'IMAGE', 'TEXT', 'RECT', 'ELLIPSE', 'POLYGON', 'CAPTION']);
 const AUDIO_TYPES = new Set(['VIDEO', 'AUDIO']);
 
-function formatVal(v: unknown): string {
-  if (v === undefined || v === null) return '—';
-  if (typeof v === 'number') return Number.isFinite(v) ? v.toFixed(2) : '—';
-  if (typeof v === 'string') return v;
-  if (typeof v === 'object') {
-    const rec = v as Record<string, unknown>;
-    if (typeof rec['value'] === 'number') return `${rec['value'].toFixed(0)}%`;
-  }
-  return String(v);
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function asNum(v: unknown): number | null {
-  if (typeof v === 'number' && Number.isFinite(v)) return v;
-  return null;
+function resolveEditValue(v: unknown, dimension?: number): string {
+  if (v === undefined || v === null) return '';
+  if (typeof v === 'number' && Number.isFinite(v)) return String(Math.round(v * 10) / 10);
+  if (v && typeof v === 'object') {
+    const rec = v as Record<string, unknown>;
+    if (typeof rec['value'] === 'number') {
+      if (dimension !== undefined) return String(Math.round(rec['value'] / 100 * dimension * 10) / 10);
+      return String(rec['value']);
+    }
+  }
+  if (typeof v === 'string') return v;
+  return '';
 }
 
 function propSection(title: string, body: string): string {
@@ -58,13 +61,59 @@ function propSection(title: string, body: string): string {
     </div>`;
 }
 
-function propRow(...fields: { label: string; value: string }[]): string {
+function propField(label: string, value: string, prop?: string, inputType = 'text', extra = ''): string {
+  const editable = prop ? `data-prop="${prop}"` : 'readonly';
+  return `<div class="prop-field">
+    <span class="prop-label">${label}</span>
+    <input class="prop-input${prop ? ' editable' : ''}" type="${inputType}" value="${escapeAttr(value)}" ${editable} ${extra} />
+  </div>`;
+}
+
+function propRow(...fields: Array<{ label: string; value: string; prop?: string; type?: string; extra?: string }>): string {
   const cls = fields.length === 1 ? 'prop-row single' : 'prop-row';
-  return `<div class="${cls}">${fields.map(f => `
-    <div class="prop-field">
-      <span class="prop-label">${f.label}</span>
-      <input class="prop-input" type="text" value="${f.value}" readonly />
-    </div>`).join('')}</div>`;
+  return `<div class="${cls}">${fields.map(f => propField(f.label, f.value, f.prop, f.type, f.extra)).join('')}</div>`;
+}
+
+function updateClipProp(clip: core.Clip, prop: string, value: string, composition: core.Composition) {
+  const raw = clip as unknown as Record<string, unknown>;
+  const num = parseFloat(value);
+
+  switch (prop) {
+    case 'delay':
+      if (!isNaN(num) && num >= 0) (clip as unknown as Record<string, unknown>)['delay'] = num;
+      break;
+    case 'duration':
+      if (!isNaN(num) && num > 0) (clip as unknown as Record<string, unknown>)['duration'] = num;
+      break;
+    case 'x':
+    case 'y':
+      if (!isNaN(num)) raw[prop] = num;
+      break;
+    case 'width':
+    case 'height':
+      if (!isNaN(num) && num > 0) raw[prop] = num;
+      break;
+    case 'rotation':
+      if (!isNaN(num)) raw['rotation'] = num;
+      break;
+    case 'opacityPct':
+      if (!isNaN(num)) raw['opacity'] = Math.max(0, Math.min(1, num / 100));
+      break;
+    case 'text':
+      raw['text'] = value;
+      break;
+    case 'fontSize':
+      if (!isNaN(num) && num > 0) raw['fontSize'] = num;
+      break;
+    case 'color':
+      raw['color'] = value;
+      break;
+    case 'volumePct':
+      if (!isNaN(num)) raw['volume'] = Math.max(0, Math.min(2, num / 100));
+      break;
+  }
+
+  composition.seek(composition.currentTime);
 }
 
 export function setupRightPanel(el: HTMLElement, state: EditorState) {
@@ -111,6 +160,28 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     `;
   }
 
+  function bindPropInputs(clip: core.Clip) {
+    propsContent.querySelectorAll<HTMLInputElement>('[data-prop]').forEach(input => {
+      const prop = input.dataset.prop!;
+
+      const commit = () => {
+        updateClipProp(clip, prop, input.value, state.composition);
+        state.emit('props:change');
+      };
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { commit(); input.blur(); }
+        if (e.key === 'Escape') input.blur();
+      });
+
+      input.addEventListener('blur', commit);
+
+      if (input.type === 'range' || input.type === 'color') {
+        input.addEventListener('input', commit);
+      }
+    });
+  }
+
   function renderClipProps() {
     const sel = state.getSelectedClip();
     if (!sel) { renderEmpty(); return; }
@@ -121,53 +192,74 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     const typeStr = String(clip.type);
     const color = TYPE_COLORS[typeStr] ?? TYPE_COLORS['BASE'];
     const icon = TYPE_ICONS[typeStr] ?? TYPE_ICONS['BASE'];
+    const compW = state.composition.width;
+    const compH = state.composition.height;
 
     const sections: string[] = [];
 
+    const delayVal = resolveEditValue(clip.delay);
+    const durVal = resolveEditValue(clip.duration);
     sections.push(propSection('Timing',
-      propRow({ label: 'Delay', value: `${formatVal(clip.delay)}s` }, { label: 'Duration', value: `${formatVal(clip.duration)}s` })
+      propRow(
+        { label: 'Delay (s)', value: delayVal, prop: 'delay', type: 'number', extra: 'min="0" step="0.1"' },
+        { label: 'Duration (s)', value: durVal, prop: 'duration', type: 'number', extra: 'min="0.1" step="0.1"' }
+      )
     ));
 
     if (VISUAL_TYPES.has(typeStr)) {
-      const xVal = formatVal(raw['x']);
-      const yVal = formatVal(raw['y']);
-      const wVal = formatVal(raw['width']);
-      const hVal = formatVal(raw['height']);
-      const rotVal = formatVal(raw['rotation']);
-      const opNum = asNum(raw['opacity']);
-      const opPct = opNum !== null ? Math.round(opNum * 100) : 100;
-      const opVal = opNum !== null ? opNum : 1;
+      const xVal = resolveEditValue(raw['x'], compW);
+      const yVal = resolveEditValue(raw['y'], compH);
+      const wVal = resolveEditValue(raw['width'], compW);
+      const hVal = resolveEditValue(raw['height'], compH);
+      const rotVal = resolveEditValue(raw['rotation']);
+      const opNum = typeof raw['opacity'] === 'number' ? raw['opacity'] : 1;
+      const opPct = Math.round(opNum * 100);
 
       sections.push(propSection('Transform',
-        propRow({ label: 'X', value: xVal }, { label: 'Y', value: yVal }) +
-        propRow({ label: 'Width', value: wVal }, { label: 'Height', value: hVal }) +
-        propRow({ label: 'Rotation', value: `${rotVal}°` }) +
+        propRow(
+          { label: 'X', value: xVal, prop: 'x', type: 'number', extra: 'step="1"' },
+          { label: 'Y', value: yVal, prop: 'y', type: 'number', extra: 'step="1"' }
+        ) +
+        propRow(
+          { label: 'Width', value: wVal, prop: 'width', type: 'number', extra: 'min="1" step="1"' },
+          { label: 'Height', value: hVal, prop: 'height', type: 'number', extra: 'min="1" step="1"' }
+        ) +
+        propRow({ label: 'Rotation (°)', value: rotVal, prop: 'rotation', type: 'number', extra: 'step="1"' }) +
         `<div class="prop-field">
           <span class="prop-label">Opacity</span>
           <div class="prop-slider-row">
-            <input class="prop-slider" id="opacity-slider" type="range" min="0" max="1" step="0.01" value="${opVal}" />
-            <span class="prop-slider-val" id="opacity-val">${opPct}%</span>
+            <input class="prop-slider" data-prop="opacityPct" type="range" min="0" max="100" step="1" value="${opPct}" />
+            <input class="prop-input editable prop-opacity-num" data-prop="opacityPct" type="number" min="0" max="100" step="1" value="${opPct}" style="width:48px;flex-shrink:0;" />
           </div>
         </div>`
       ));
     }
 
     if (typeStr === 'TEXT' || typeStr === 'CAPTION') {
-      const text = raw['text'];
-      const fontSize = formatVal(raw['fontSize']);
-      const color2 = typeof raw['color'] === 'string' ? raw['color'] : '—';
+      const textVal = typeof raw['text'] === 'string' ? raw['text'] : '';
+      const fontSizeVal = resolveEditValue(raw['fontSize']);
+      const colorVal = typeof raw['color'] === 'string' ? raw['color'] : '#ffffff';
+
       sections.push(propSection('Text',
-        propRow({ label: 'Content', value: typeof text === 'string' ? text.slice(0, 30) : '—' }) +
-        propRow({ label: 'Font Size', value: fontSize }, { label: 'Color', value: color2 })
+        propRow({ label: 'Content', value: textVal, prop: 'text' }) +
+        propRow(
+          { label: 'Font Size', value: fontSizeVal, prop: 'fontSize', type: 'number', extra: 'min="1" step="1"' },
+          { label: 'Color', value: colorVal, prop: 'color', type: 'color' }
+        )
       ));
     }
 
     if (AUDIO_TYPES.has(typeStr)) {
-      const vol = asNum(raw['volume']);
-      const muted = raw['muted'];
+      const vol = typeof raw['volume'] === 'number' ? raw['volume'] : 1;
+      const volPct = Math.round(vol * 100);
       sections.push(propSection('Audio',
-        propRow({ label: 'Volume', value: vol !== null ? `${Math.round(vol * 100)}%` : '—' },
-                { label: 'Muted', value: muted ? 'Yes' : 'No' })
+        `<div class="prop-field">
+          <span class="prop-label">Volume</span>
+          <div class="prop-slider-row">
+            <input class="prop-slider" data-prop="volumePct" type="range" min="0" max="200" step="1" value="${volPct}" />
+            <input class="prop-input editable" data-prop="volumePct" type="number" min="0" max="200" step="1" value="${volPct}" style="width:48px;flex-shrink:0;" />
+          </div>
+        </div>`
       ));
     }
 
@@ -191,15 +283,25 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
       });
     });
 
-    const opSlider = propsContent.querySelector('#opacity-slider') as HTMLInputElement | null;
-    const opVal = propsContent.querySelector('#opacity-val') as HTMLSpanElement | null;
-    if (opSlider && opVal) {
-      opSlider.addEventListener('input', () => {
-        const v = parseFloat(opSlider.value);
-        (clip as unknown as Record<string, unknown>)['opacity'] = v;
-        opVal.textContent = `${Math.round(v * 100)}%`;
-      });
-    }
+    syncOpacityControls();
+    syncVolumeControls();
+    bindPropInputs(clip);
+  }
+
+  function syncOpacityControls() {
+    const slider = propsContent.querySelector<HTMLInputElement>('.prop-slider[data-prop="opacityPct"]');
+    const numInput = propsContent.querySelector<HTMLInputElement>('.prop-opacity-num');
+    if (!slider || !numInput) return;
+    slider.addEventListener('input', () => { numInput.value = slider.value; });
+    numInput.addEventListener('input', () => { slider.value = numInput.value; });
+  }
+
+  function syncVolumeControls() {
+    const slider = propsContent.querySelector<HTMLInputElement>('.prop-slider[data-prop="volumePct"]');
+    const numInput = propsContent.querySelector<HTMLInputElement>('input[type="number"][data-prop="volumePct"]');
+    if (!slider || !numInput) return;
+    slider.addEventListener('input', () => { numInput.value = slider.value; });
+    numInput.addEventListener('input', () => { slider.value = numInput.value; });
   }
 
   function renderInfo() {
@@ -218,6 +320,7 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
   }
 
   state.on('selection:change', renderClipProps);
+  state.on('props:change', renderClipProps);
   state.on('layers:change', () => { renderClipProps(); renderInfo(); });
   state.on('timeline:change', renderInfo);
 
