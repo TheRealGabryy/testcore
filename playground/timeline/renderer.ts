@@ -30,6 +30,13 @@ export class TimelineRenderer {
     this.view = view;
   }
 
+  private resizeObserver: ResizeObserver | null = null;
+  private onResize: (() => void) | null = null;
+
+  setResizeCallback(fn: () => void): void {
+    this.onResize = fn;
+  }
+
   mount(): void {
     this.container.innerHTML = `
       <div id="tl-panel">
@@ -85,6 +92,19 @@ export class TimelineRenderer {
       const scrollTop = this.contentEl.scrollTop;
       this.headerRowsEl.style.transform = `translateY(-${scrollTop}px)`;
     });
+
+    // Re-render when container resizes (catches initial layout and window resize)
+    this.resizeObserver = new ResizeObserver(() => {
+      this.drawRuler();
+      this.renderTracks();
+      this.updatePlayhead();
+      this.onResize?.();
+    });
+    this.resizeObserver.observe(this.contentEl);
+  }
+
+  destroy(): void {
+    this.resizeObserver?.disconnect();
   }
 
   getTracksEl(): HTMLElement { return this.tracksBodyEl; }
@@ -156,18 +176,30 @@ export class TimelineRenderer {
   }
 
   renderTracks(): void {
-    const totalWidth = Math.max(timeToX(this.state.duration, this.view.zoom) + 200, this.contentEl.clientWidth);
-    this.innerEl.style.width = `${totalWidth}px`;
-
     const videoTracks = this.state.tracks.filter(t => t.type === 'video').reverse();
     const audioTracks = this.state.tracks.filter(t => t.type === 'audio');
     const orderedTracks = [...videoTracks, ...audioTracks];
 
+    // Compute total content width from live clip positions — never use clientWidth
+    // which may be 0 during initial layout
+    let maxEnd = Math.max(this.state.duration, 10);
+    for (const track of orderedTracks) {
+      for (const clip of track.clips) {
+        const liveDur = clip.clipRef.duration > 0 ? clip.clipRef.duration : clip.duration;
+        maxEnd = Math.max(maxEnd, clip.start + liveDur);
+      }
+    }
+    const totalWidth = Math.max(timeToX(maxEnd, this.view.zoom) + 300, 600);
+    this.innerEl.style.width = `${totalWidth}px`;
+
     const rows = orderedTracks.map((track, i) => {
       const isAudio = track.type === 'audio';
       const clips = track.clips.map(clip => {
+        // Always read duration live from the clip reference so async-loaded
+        // sources (video, audio) are picked up on every render pass
+        const liveDur = clip.clipRef.duration > 0 ? clip.clipRef.duration : clip.duration;
         const left = timeToX(clip.start, this.view.zoom);
-        const width = Math.max(durationToWidth(clip.duration, this.view.zoom), 2);
+        const width = Math.max(durationToWidth(liveDur, this.view.zoom), 4);
         const isSelected = clip.id === this.selectedClipId;
         return `<div class="tl-clip${isSelected ? ' selected' : ''}"
           data-clip-id="${clip.id}"
@@ -185,12 +217,11 @@ export class TimelineRenderer {
     }).join('');
 
     this.tracksBodyEl.innerHTML = rows || `<div class="tl-empty-msg">No tracks. Add layers to see them here.</div>`;
-
     this.updatePlayheadHeight(orderedTracks.length);
   }
 
   drawRuler(): void {
-    const totalWidth = Math.max(timeToX(this.state.duration, this.view.zoom) + 200, this.contentEl.clientWidth || 800);
+    const totalWidth = Math.max(timeToX(Math.max(this.state.duration, 10), this.view.zoom) + 300, 600);
     const dpr = devicePixelRatio || 1;
     const height = 24;
 

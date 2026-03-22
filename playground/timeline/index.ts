@@ -21,10 +21,15 @@ export function setupProfessionalTimeline(
   // Mount DOM
   renderer.mount();
 
-  // Sync from editor state
+  // Sync from editor state, then re-render after short delays to catch
+  // async-loaded clip durations (video/audio sources resolve after mount)
   function syncAndRender(): void {
     tlState.syncFromEditor(editorState.editorLayers, composition.duration || 30);
     renderer.renderAll();
+    // Re-render after source loading completes (typically 200–2000ms)
+    setTimeout(() => { tlState.syncFromEditor(editorState.editorLayers, composition.duration || 30); renderer.renderAll(); }, 300);
+    setTimeout(() => { tlState.syncFromEditor(editorState.editorLayers, composition.duration || 30); renderer.renderAll(); }, 1000);
+    setTimeout(() => { tlState.syncFromEditor(editorState.editorLayers, composition.duration || 30); renderer.renderAll(); }, 3000);
   }
 
   // Setup interactions
