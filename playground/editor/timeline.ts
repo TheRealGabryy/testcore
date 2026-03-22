@@ -94,6 +94,53 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   let seeking = false;
 
+  interface DragState {
+    clipEl: HTMLElement;
+    clipId: string;
+    layerId: string;
+    originalDelay: number;
+    startClientX: number;
+    moved: boolean;
+  }
+  let drag: DragState | null = null;
+
+  document.addEventListener('mousemove', (e) => {
+    if (!drag) return;
+    if (!drag.moved && Math.abs(e.clientX - drag.startClientX) > 3) {
+      drag.moved = true;
+      document.body.style.cursor = 'grabbing';
+    }
+    if (!drag.moved) return;
+
+    const editorLayer = state.editorLayers.find(l => l.id === drag!.layerId);
+    const editorClip = editorLayer?.clips.find(c => c.id === drag!.clipId);
+    if (!editorClip) return;
+
+    const deltaSeconds = (e.clientX - drag.startClientX) / state.zoom;
+    const newDelay = Math.max(0, drag.originalDelay + deltaSeconds);
+    editorClip.clip.delay = newDelay;
+    drag.clipEl.style.left = `${newDelay * state.zoom}px`;
+    drag.clipEl.classList.add('dragging');
+  });
+
+  document.addEventListener('mouseup', async () => {
+    if (!drag) return;
+    const moved = drag.moved;
+    drag.clipEl.classList.remove('dragging');
+    document.body.style.cursor = '';
+    drag = null;
+    if (moved) {
+      state.emit('timeline:change');
+      await state.composition.seek(state.composition.currentTime);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (drag?.moved) {
+      e.stopPropagation();
+    }
+  }, true);
+
   function getContentWidth(): number {
     const duration = Math.max(state.composition.duration, 10);
     const natural = duration * state.zoom + 100;
@@ -187,12 +234,32 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     }).join('');
 
     tlTracks.querySelectorAll('.tl-clip').forEach(clip => {
-      clip.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = (clip as HTMLElement).dataset.clipId!;
-        const lid = (clip as HTMLElement).dataset.layerId!;
+      const clipEl = clip as HTMLElement;
+
+      clipEl.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        const id = clipEl.dataset.clipId!;
+        const lid = clipEl.dataset.layerId!;
+        const editorLayer = state.editorLayers.find(l => l.id === lid);
+        const editorClip = editorLayer?.clips.find(c => c.id === id);
+        if (!editorClip) return;
         state.selectClip(id);
         state.selectLayer(lid);
+        drag = {
+          clipEl,
+          clipId: id,
+          layerId: lid,
+          originalDelay: editorClip.clip.delay,
+          startClientX: e.clientX,
+          moved: false,
+        };
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      clipEl.addEventListener('click', (e) => {
+        if (drag?.moved) return;
+        e.stopPropagation();
       });
     });
 

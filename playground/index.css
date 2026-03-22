@@ -523,9 +523,10 @@ body { overflow: hidden; width: 100vw; height: 100vh; }
 #tl-tracks { position: relative; }
 .tl-track { height: 40px; position: relative; border-bottom: 1px solid var(--border); }
 .tl-track:hover { background: rgba(232,184,75,0.04); }
-.tl-clip { position: absolute; top: 0; height: 100%; border-radius: 0; cursor: pointer; display: flex; align-items: center; padding: 0 8px; overflow: hidden; user-select: none; min-width: 4px; transition: filter 0.1s; }
+.tl-clip { position: absolute; top: 0; height: 100%; border-radius: 0; cursor: grab; display: flex; align-items: center; padding: 0 8px; overflow: hidden; user-select: none; min-width: 4px; transition: filter 0.1s; }
 .tl-clip:hover { filter: brightness(1.15); }
 .tl-clip.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tl-clip.dragging { cursor: grabbing; filter: brightness(1.25); opacity: 0.85; z-index: 10; transition: none; }
 .tl-clip-label { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .tl-header-row {
   height: 40px;
