@@ -10,6 +10,7 @@ import { createColorGradingOverlay } from './color-grading';
 import { setupAnimationPanel } from './animation-panel';
 import { initSettings, getSettings as _getSettings } from './settings';
 import { openSettingsPanel } from './settings-panel';
+import { openExportPanel, runExport } from './export-panel';
 
 export async function createEditor() {
   initSettings();
@@ -28,55 +29,10 @@ export async function createEditor() {
   const kfPropsPanel = document.querySelector('#keyframe-props-panel') as HTMLElement;
   const kfTimelineSection = document.querySelector('#keyframe-timeline-section') as HTMLElement;
 
-  async function handleExport() {
-    const progressEl = document.querySelector('#export-progress') as HTMLElement;
-    const fillCircle = document.querySelector('#progress-fill-circle') as SVGCircleElement;
-    const pctSpan = document.querySelector('#progress-pct') as HTMLSpanElement;
-    const cancelBtn = document.querySelector('#cancel-export-btn') as HTMLButtonElement;
-
-    const encoder = new core.Encoder(composition, { video: { fps: state.fps } });
-
-    let cancelled = false;
-    cancelBtn.onclick = () => {
-      cancelled = true;
-      encoder.cancel();
-    };
-
-    encoder.onProgress = (event) => {
-      const { progress, total } = event;
-      const pct = total > 0 ? Math.round((progress / total) * 100) : 0;
-      progressEl.style.display = 'block';
-      pctSpan.textContent = `${pct}%`;
-      const circumference = 201;
-      fillCircle.style.strokeDashoffset = String(circumference - (circumference * pct) / 100);
-    };
-
-    try {
-      if (!('showSaveFilePicker' in window)) {
-        Object.assign(window, {
-          showSaveFilePicker: async () => 'untitled_video.mp4',
-        });
-      }
-
-      const fileHandle = await window.showSaveFilePicker({
-        suggestedName: 'untitled_video.mp4',
-        types: [{ description: 'Video File', accept: { 'video/mp4': ['.mp4'] } }],
-      });
-
-      await encoder.render(fileHandle);
-    } catch (e) {
-      if (e instanceof DOMException) {
-        // user cancelled
-      } else if (e instanceof core.EncoderError) {
-        alert(e.message);
-      } else if (!cancelled) {
-        alert(String(e));
-      }
-    } finally {
-      progressEl.style.display = 'none';
-      fillCircle.style.strokeDashoffset = '201';
-      pctSpan.textContent = '0%';
-    }
+  function handleExport() {
+    openExportPanel(state, (config) => {
+      runExport(composition, config, state);
+    });
   }
 
   async function handleLoadDemo() {
