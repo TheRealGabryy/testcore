@@ -96,7 +96,8 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   function getContentWidth(): number {
     const duration = Math.max(state.composition.duration, 10);
-    return duration * state.zoom + 100;
+    const natural = duration * state.zoom + 100;
+    return Math.max(natural, tlScroll.clientWidth || 0);
   }
 
   function drawRuler() {
@@ -278,6 +279,12 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   });
 
   tlHeaders.style.flexShrink = '0';
+
+  const scrollResizeObserver = new ResizeObserver(() => {
+    drawRuler();
+    renderTracks();
+  });
+  scrollResizeObserver.observe(tlScroll);
 
   state.on('layers:change', fullRender);
   state.on('timeline:change', fullRender);

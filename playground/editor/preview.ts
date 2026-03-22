@@ -358,4 +358,16 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
 
   state.on('selection:change', renderOverlay);
   state.on('layers:change', renderOverlay);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space') return;
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
+    e.preventDefault();
+    if (state.composition.playing) {
+      state.composition.pause();
+    } else {
+      state.composition.play();
+    }
+  });
 }
