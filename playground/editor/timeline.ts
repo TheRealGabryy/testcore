@@ -1,5 +1,6 @@
 import type { EditorState } from './state';
 import type { EditorLayer } from './types';
+import { TimelineSnappingEngine } from './snapping-timeline';
 
 const TRACK_H_NORMAL = 44;
 const TRACK_H_AUDIO  = 30;
@@ -200,6 +201,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
         <div id="tl-ruler"><canvas id="tl-ruler-canvas"></canvas></div>
         <div id="tl-tracks"></div>
         <div id="tl-playhead"></div>
+        <div id="tl-snap-indicator"></div>
       </div>
     </div>
   `;
@@ -216,16 +218,23 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   const tlRulerCanvas = areaEl.querySelector('#tl-ruler-canvas') as HTMLCanvasElement;
   const tlTracks = areaEl.querySelector('#tl-tracks') as HTMLDivElement;
   const tlPlayhead = areaEl.querySelector('#tl-playhead') as HTMLDivElement;
+  const tlSnapIndicator = areaEl.querySelector('#tl-snap-indicator') as HTMLDivElement;
+
+  const tlSnapping = new TimelineSnappingEngine(state.fps);
+
+  function showSnapIndicator(timeX: number, height: number) {
+    tlSnapIndicator.style.cssText = `display:block;left:${timeX}px;height:${height}px;`;
+  }
+
+  function hideSnapIndicator() {
+    tlSnapIndicator.style.display = 'none';
+  }
 
   let seeking = false;
   let playheadDragging = false;
 
   const EDGE_ZONE = 8;
   const GRID = 1 / 16;
-
-  function snap(t: number): number {
-    return Math.round(t / GRID) * GRID;
-  }
 
   interface DragState {
     clipEl: HTMLElement;
@@ -261,30 +270,46 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     }
     if (!drag.moved) return;
 
+    tlSnapping.update(state.fps);
     const deltaSeconds = (e.clientX - drag.startClientX) / state.zoom;
+    const snapTargets = tlSnapping.collectTargets(state, drag.clipId);
+    const trackH = 22 + totalTracksHeight(state.editorLayers);
 
     if (drag.mode === 'move') {
-      const newDelay = snap(Math.max(0, drag.originalDelay + deltaSeconds));
+      const rawDelay = Math.max(0, drag.originalDelay + deltaSeconds);
+      const { time: newDelay, snapped, snapTime } = tlSnapping.resolve(rawDelay, snapTargets);
       drag.pendingDelay = newDelay;
       drag.ghostEl.style.left = `${newDelay * state.zoom}px`;
+      drag.ghostEl.classList.toggle('tl-clip-ghost--snapped', snapped);
+      if (snapped && snapTime !== null) showSnapIndicator(snapTime * state.zoom, trackH);
+      else hideSnapIndicator();
     } else if (drag.mode === 'resize-right') {
-      const newDuration = snap(Math.max(GRID, drag.originalDuration + deltaSeconds));
+      const rawEnd = drag.originalDelay + Math.max(GRID, drag.originalDuration + deltaSeconds);
+      const { time: newEnd, snapped, snapTime } = tlSnapping.resolve(rawEnd, snapTargets);
+      const newDuration = Math.max(GRID, newEnd - drag.originalDelay);
       drag.pendingDuration = newDuration;
       drag.ghostEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
+      drag.ghostEl.classList.toggle('tl-clip-ghost--snapped', snapped);
+      if (snapped && snapTime !== null) showSnapIndicator(snapTime * state.zoom, trackH);
+      else hideSnapIndicator();
     } else if (drag.mode === 'resize-left') {
       const maxDelta = drag.originalDelay;
-      const clampedDelta = Math.max(-maxDelta, deltaSeconds);
-      const newDelay = snap(Math.max(0, drag.originalDelay + clampedDelta));
-      const newDuration = snap(Math.max(GRID, drag.originalDuration - (newDelay - drag.originalDelay)));
+      const rawDelay = Math.max(0, drag.originalDelay + Math.max(-maxDelta, deltaSeconds));
+      const { time: newDelay, snapped, snapTime } = tlSnapping.resolve(rawDelay, snapTargets);
+      const newDuration = Math.max(GRID, drag.originalDuration - (newDelay - drag.originalDelay));
       drag.pendingDelay = newDelay;
       drag.pendingDuration = newDuration;
       drag.ghostEl.style.left = `${newDelay * state.zoom}px`;
       drag.ghostEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
+      drag.ghostEl.classList.toggle('tl-clip-ghost--snapped', snapped);
+      if (snapped && snapTime !== null) showSnapIndicator(snapTime * state.zoom, trackH);
+      else hideSnapIndicator();
     }
   });
 
   document.addEventListener('mouseup', async () => {
     playheadDragging = false;
+    hideSnapIndicator();
     if (!drag) return;
     const moved = drag.moved;
     const { clipId, layerId, pendingDelay, pendingDuration } = drag;
@@ -533,9 +558,14 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   tlRulerCanvas.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     playheadDragging = true;
+    tlSnapping.update(state.fps);
     const rect = tlScroll.getBoundingClientRect();
     const x = e.clientX - rect.left + tlScroll.scrollLeft;
-    const t = snap(Math.max(0, Math.min(x / state.zoom, state.composition.duration)));
+    const rawT = Math.max(0, Math.min(x / state.zoom, state.composition.duration));
+    const snapTargets = tlSnapping.collectTargets(state);
+    const { time: t, snapped, snapTime } = tlSnapping.resolve(rawT, snapTargets);
+    const trackH = 22 + totalTracksHeight(state.editorLayers);
+    if (snapped && snapTime !== null) showSnapIndicator(snapTime * state.zoom, trackH);
     state.composition.seek(t);
   });
 
@@ -544,9 +574,15 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     if (!playheadDragging) return;
     if (seeking) return;
     seeking = true;
+    tlSnapping.update(state.fps);
     const rect = tlScroll.getBoundingClientRect();
     const x = e.clientX - rect.left + tlScroll.scrollLeft;
-    const t = snap(Math.max(0, Math.min(x / state.zoom, state.composition.duration)));
+    const rawT = Math.max(0, Math.min(x / state.zoom, state.composition.duration));
+    const snapTargets = tlSnapping.collectTargets(state);
+    const { time: t, snapped, snapTime } = tlSnapping.resolve(rawT, snapTargets);
+    const trackH = 22 + totalTracksHeight(state.editorLayers);
+    if (snapped && snapTime !== null) showSnapIndicator(snapTime * state.zoom, trackH);
+    else hideSnapIndicator();
     await state.composition.seek(t);
     seeking = false;
   });

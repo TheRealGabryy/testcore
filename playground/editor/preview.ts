@@ -1,4 +1,6 @@
 import type { EditorState } from './state';
+import { CanvasSnappingEngine } from './snapping-canvas';
+import type { ClipBoundsInfo } from './snapping-canvas';
 
 function svgIcon(path: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
@@ -37,6 +39,11 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
 
   let currentScale = 1;
   let dragState: DragState | null = null;
+
+  const canvasSnapping = new CanvasSnappingEngine(
+    state.composition.width,
+    state.composition.height
+  );
 
   playbackEl.innerHTML = `
     <span id="time-display">00:00 / 00:00</span>
@@ -110,6 +117,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
     player.style.width = `${state.composition.width}px`;
     player.style.height = `${state.composition.height}px`;
     player.style.transform = `scale(${currentScale})`;
+    canvasSnapping.update(state.composition.width, state.composition.height);
   };
 
   const ro = new ResizeObserver(handleResize);
@@ -147,9 +155,61 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
 
   const VISUAL_TYPES = new Set(['VIDEO', 'IMAGE', 'TEXT', 'RECT', 'ELLIPSE', 'POLYGON']);
 
+  function getOtherClipBounds(selectedId: string): ClipBoundsInfo[] {
+    const result: ClipBoundsInfo[] = [];
+    for (const layer of state.editorLayers) {
+      if (!layer.visible) continue;
+      for (const ec of layer.clips) {
+        if (ec.id === selectedId) continue;
+        if (!VISUAL_TYPES.has(String(ec.clip.type))) continue;
+        const raw = ec.clip as unknown as Record<string, unknown>;
+        const bounds = getClipBounds(raw);
+        if (!bounds) continue;
+        result.push(canvasSnapping.boundsOf(bounds.x, bounds.y, bounds.w, bounds.h, bounds.ax, bounds.ay));
+      }
+    }
+    return result;
+  }
+
+  function getSnapGuidesEl(): HTMLElement {
+    let el = overlay.querySelector('#snap-guides') as HTMLElement | null;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'snap-guides';
+      el.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;';
+      overlay.insertBefore(el, overlay.firstChild);
+    }
+    return el;
+  }
+
+  function renderSnapGuides(guides: import('./snapping-canvas').SnapGuide[]) {
+    const container = getSnapGuidesEl();
+    container.innerHTML = '';
+    for (const g of guides) {
+      const line = document.createElement('div');
+      line.className = 'snap-guide';
+      if (g.axis === 'x') {
+        line.style.cssText = `position:absolute;left:${g.position}px;top:${g.start}px;width:1px;height:${g.end - g.start}px;`;
+      } else {
+        line.style.cssText = `position:absolute;top:${g.position}px;left:${g.start}px;height:1px;width:${g.end - g.start}px;`;
+      }
+      container.appendChild(line);
+    }
+  }
+
+  function clearSnapGuides() {
+    const container = overlay.querySelector('#snap-guides');
+    if (container) container.innerHTML = '';
+  }
+
   function renderOverlay() {
     overlay.innerHTML = '';
     overlay.style.pointerEvents = 'none';
+
+    const guidesContainer = document.createElement('div');
+    guidesContainer.id = 'snap-guides';
+    guidesContainer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;';
+    overlay.appendChild(guidesContainer);
 
     const sel = state.getSelectedClip();
     if (!sel) return;
@@ -208,6 +268,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
         const onMove = (ev: PointerEvent) => handleDrag(ev, raw);
         const onUp = () => {
           dragState = null;
+          clearSnapGuides();
           handle.removeEventListener('pointermove', onMove);
           handle.removeEventListener('pointerup', onUp);
           state.emit('props:change');
@@ -243,6 +304,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
       const onMove = (ev: PointerEvent) => handleDrag(ev, raw);
       const onUp = () => {
         dragState = null;
+        clearSnapGuides();
         box.removeEventListener('pointermove', onMove);
         box.removeEventListener('pointerup', onUp);
         state.emit('props:change');
@@ -282,8 +344,14 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
 
     switch (dragState.mode) {
       case 'move': {
-        const nx = sx + dx;
-        const ny = sy + dy;
+        const rawNx = sx + dx;
+        const rawNy = sy + dy;
+        const selectedId = state.selectedClipId ?? '';
+        const others = getOtherClipBounds(selectedId);
+        const snapResult = canvasSnapping.resolve(rawNx, rawNy, sw, sh, ax, ay, others);
+        const nx = snapResult.x;
+        const ny = snapResult.y;
+        renderSnapGuides(snapResult.guides);
         raw['x'] = nx;
         raw['y'] = ny;
         box.style.left = `${nx - sw * ax}px`;

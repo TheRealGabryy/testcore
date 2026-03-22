@@ -1551,3 +1551,40 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 .anchor-preset-btn--center {
   border-color: var(--text-muted);
 }
+
+.snap-guide {
+  position: absolute;
+  background: #00d4e8;
+  box-shadow: 0 0 6px 1px rgba(0, 212, 232, 0.6);
+  pointer-events: none;
+  z-index: 50;
+}
+
+#tl-snap-indicator {
+  display: none;
+  position: absolute;
+  top: 0;
+  width: 2px;
+  background: #a3e635;
+  box-shadow: 0 0 6px 2px rgba(163, 230, 53, 0.5);
+  pointer-events: none;
+  z-index: 15;
+  transform: translateX(-1px);
+}
+
+#tl-snap-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid #a3e635;
+}
+
+.tl-clip-ghost--snapped {
+  border: 1px solid #a3e635;
+  box-shadow: 0 0 0 1px rgba(163, 230, 53, 0.4);
+}
