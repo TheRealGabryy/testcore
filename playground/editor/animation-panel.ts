@@ -3,7 +3,7 @@ import type { EditorState } from './state';
 const ROW_H = 24;
 const LABEL_W = 88;
 const RULER_H = 24;
-const DIAMOND = 5;
+const DIAMOND = 10;
 
 interface PropDef {
   key: string;
@@ -116,9 +116,9 @@ function removeKf(clip: Record<string, unknown>, key: string, frameIndex: number
 function drawRuler(ctx: CanvasRenderingContext2D, w: number, zoom: number, scrollX: number, dpr: number) {
   const h = RULER_H * dpr;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#1e1f21';
+  ctx.fillStyle = '#101928';
   ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#1a2b45';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, h - 0.5); ctx.lineTo(w, h - 0.5);
@@ -130,14 +130,14 @@ function drawRuler(ctx: CanvasRenderingContext2D, w: number, zoom: number, scrol
   const startSec = Math.floor(secStart / interval) * interval;
   const endSec = (scrollX + w / dpr) / zoom + interval;
 
-  ctx.fillStyle = '#606060';
+  ctx.fillStyle = '#7a93bc';
   ctx.font = `${9 * dpr}px Inter, sans-serif`;
   ctx.textAlign = 'left';
 
   for (let s = startSec; s <= endSec; s += interval) {
     const x = (s * zoom - scrollX) * dpr;
     if (x < 0 || x > w) continue;
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = '#243655';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, h * 0.55); ctx.lineTo(x, h);
@@ -167,10 +167,10 @@ function drawTracks(
     const prop = props[i];
     const rowY = i * ROW_H * dpr;
 
-    ctx.fillStyle = i % 2 === 0 ? '#1a1a1c' : '#1e1e20';
+    ctx.fillStyle = i % 2 === 0 ? '#101928' : '#0d1a28';
     ctx.fillRect(0, rowY, cw, ROW_H * dpr);
 
-    ctx.strokeStyle = '#2a2a2e';
+    ctx.strokeStyle = '#1a2b45';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(0, rowY + ROW_H * dpr - 0.5);
@@ -178,7 +178,7 @@ function drawTracks(
     ctx.stroke();
 
     const centerY = rowY + ROW_H * dpr / 2;
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = '#1f3050';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(0, centerY); ctx.lineTo(cw, centerY);
@@ -186,7 +186,7 @@ function drawTracks(
 
     const frames = getFrames(clip, prop.key);
     if (frames.length >= 2) {
-      ctx.strokeStyle = '#4a6f9c';
+      ctx.strokeStyle = '#e8b84b';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       let first = true;
@@ -208,9 +208,9 @@ function drawTracks(
       ctx.save();
       ctx.translate(x, centerY);
       ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = isSelected ? '#ffffff' : '#d4a832';
-      ctx.strokeStyle = isSelected ? '#888' : '#a07820';
-      ctx.lineWidth = 0.5;
+      ctx.fillStyle = isSelected ? '#22c55e' : '#e8b84b';
+      ctx.strokeStyle = isSelected ? '#16a34a' : '#a07820';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.rect(-d / 2, -d / 2, d, d);
       ctx.fill();
@@ -498,7 +498,7 @@ export function setupAnimationPanel(
         const t = clipDelay + timeToSecs(frames[fi].time);
         const dx = (t * state.zoom - scrollX) - cx;
         const dy = (rowIndex + 0.5) * ROW_H - cy;
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
           selKf = { propKey: prop.key, frameIndex: fi };
           redrawTracks();
           return;
