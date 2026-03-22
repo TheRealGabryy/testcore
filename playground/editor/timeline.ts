@@ -95,6 +95,8 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   let seeking = false;
   let playheadDragging = false;
   let dragRafId: number | null = null;
+  let dragUpdating = false;
+  let pendingDragUpdate = false;
 
   const EDGE_ZONE = 8;
   const GRID = 1 / 16;
@@ -153,10 +155,24 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     if (dragRafId === null) {
       dragRafId = requestAnimationFrame(() => {
         dragRafId = null;
-        state.composition.seek(state.composition.currentTime);
+        scheduleDragUpdate();
       });
     }
   });
+
+  async function scheduleDragUpdate() {
+    if (dragUpdating) {
+      pendingDragUpdate = true;
+      return;
+    }
+    dragUpdating = true;
+    await state.composition.update();
+    dragUpdating = false;
+    if (pendingDragUpdate) {
+      pendingDragUpdate = false;
+      scheduleDragUpdate();
+    }
+  }
 
   document.addEventListener('mouseup', async () => {
     playheadDragging = false;
@@ -168,6 +184,8 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
       cancelAnimationFrame(dragRafId);
       dragRafId = null;
     }
+    dragUpdating = false;
+    pendingDragUpdate = false;
     drag = null;
     if (moved) {
       state.emit('timeline:change');
