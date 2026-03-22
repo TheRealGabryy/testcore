@@ -157,10 +157,10 @@ export function createColorGradingOverlay(
     lastSrc = src;
 
     const overlay = document.createElement('canvas');
-    overlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;';
+    overlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;display:none;';
     playerEl.appendChild(overlay);
 
-    const gl = overlay.getContext('webgl', { alpha: false }) as WebGLRenderingContext;
+    const gl = overlay.getContext('webgl', { alpha: true, premultipliedAlpha: false }) as WebGLRenderingContext;
     if (!gl) return false;
 
     const vert = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC);
@@ -212,16 +212,18 @@ export function createColorGradingOverlay(
       gl.viewport(0, 0, src.width, src.height);
     }
 
+    if (!cg) {
+      ov.style.display = 'none';
+      return;
+    }
+
+    ov.style.display = '';
+
     try {
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
     } catch {
-      return;
-    }
-
-    if (!cg) {
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      ov.style.display = 'none';
       return;
     }
 
