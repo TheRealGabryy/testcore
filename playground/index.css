@@ -1132,6 +1132,253 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 .cg-empty svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
 .cg-empty p { font-size: 11px; line-height: 1.6; max-width: 160px; }
 
+/* ─── COLOR GRADING SUB-TABS ─────────────────────────────────────────────── */
+.cg-subtabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  padding: 0 6px;
+  gap: 2px;
+}
+.cg-subtab {
+  flex: 1;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+  text-transform: uppercase;
+}
+.cg-subtab:hover { color: var(--text-2); }
+.cg-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.cg-content-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-active) transparent;
+}
+.cg-basic-tab { display: flex; flex-direction: column; }
+
+/* ─── CURVES TAB ─────────────────────────────────────────────────────────── */
+.crv-tab {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 8px;
+}
+.crv-section {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 4px;
+}
+.crv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.crv-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.crv-btn {
+  width: 20px; height: 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px;
+  transition: color 0.1s, background 0.1s;
+}
+.crv-btn:hover { color: var(--text-2); background: var(--bg-hover); }
+.crv-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; pointer-events: none; }
+
+.crv-ch-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.crv-ch-tab {
+  flex: 1;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-active);
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+}
+.crv-ch-tab:hover { color: var(--text-2); }
+.crv-ch-tab.active {
+  background: var(--bg-panel);
+  color: var(--ch-color, var(--accent));
+  border-color: var(--ch-color, var(--accent));
+}
+
+.crv-canvas-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0 2px;
+}
+.crv-canvas {
+  display: block;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1;
+  cursor: crosshair;
+  border: 1px solid var(--border);
+}
+
+.crv-hint {
+  font-size: 9px;
+  color: var(--text-3);
+  text-align: center;
+  padding: 4px 0 2px;
+  opacity: 0.6;
+}
+.crv-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ─── WHEELS TAB ─────────────────────────────────────────────────────────── */
+.wh-tab {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 8px;
+}
+.wh-tab-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 8px 12px 4px;
+}
+.wh-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+.wh-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-panel);
+  padding: 6px 6px 8px;
+  gap: 4px;
+}
+.wh-cell-desc {
+  font-size: 8px;
+  color: var(--text-3);
+  opacity: 0.7;
+  flex: 1;
+  text-align: right;
+}
+.wh-luma-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 20px;
+}
+.wh-luma-label {
+  font-size: 9px;
+  color: var(--text-3);
+  white-space: nowrap;
+  min-width: 56px;
+}
+.wh-luma-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--bg-active);
+  outline: none;
+  cursor: pointer;
+}
+.wh-luma-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--text-3);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.wh-luma-slider::-webkit-slider-thumb:hover { background: var(--accent); }
+
+/* ─── HSL SECONDARY TAB ──────────────────────────────────────────────────── */
+.hsl-tab {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 8px;
+}
+.hsl-enable-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.hsl-enable-chk {
+  width: 14px; height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.hsl-enable-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  user-select: none;
+}
+.hsl-section {
+  padding: 8px 10px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hsl-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.hsl-hue-strip {
+  width: 100%;
+  height: 28px;
+  border-radius: 4px;
+  display: block;
+  cursor: ew-resize;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+}
+
 /* ─── ANIMATION / KEYFRAME PANEL ─────────────────────────────────────────── */
 
 /* Empty state for both panels */
