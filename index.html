@@ -12,31 +12,37 @@
   <div id="editor">
     <div id="main">
       <nav id="icon-sidebar"></nav>
-      <aside id="left-panel"></aside>
-      <div id="center">
-        <div id="preview-area">
-          <div id="player-container">
-            <div id="player"></div>
-            <div id="export-progress" style="display:none">
-              <div class="progress-overlay">
-                <div class="progress-ring-wrap">
-                  <svg class="progress-ring-svg" viewBox="0 0 80 80">
-                    <circle class="progress-track" cx="40" cy="40" r="32"/>
-                    <circle class="progress-fill" id="progress-fill-circle" cx="40" cy="40" r="32"/>
-                  </svg>
-                  <span id="progress-pct">0%</span>
+      <div id="content-area">
+        <div id="top-half">
+          <aside id="left-panel"></aside>
+          <div id="center">
+            <div id="preview-area">
+              <div id="player-container">
+                <div id="player"></div>
+                <div id="export-progress" style="display:none">
+                  <div class="progress-overlay">
+                    <div class="progress-ring-wrap">
+                      <svg class="progress-ring-svg" viewBox="0 0 80 80">
+                        <circle class="progress-track" cx="40" cy="40" r="32"/>
+                        <circle class="progress-fill" id="progress-fill-circle" cx="40" cy="40" r="32"/>
+                      </svg>
+                      <span id="progress-pct">0%</span>
+                    </div>
+                    <p class="progress-label">Rendering video...</p>
+                    <button id="cancel-export-btn" class="btn-ghost">Cancel</button>
+                  </div>
                 </div>
-                <p class="progress-label">Rendering video...</p>
-                <button id="cancel-export-btn" class="btn-ghost">Cancel</button>
               </div>
             </div>
+            <div id="playback-bar"></div>
           </div>
+          <aside id="right-panel"></aside>
         </div>
-        <div id="playback-bar"></div>
-        <div id="timeline-controls-bar"></div>
-        <div id="timeline-area"></div>
+        <div id="bottom-half">
+          <div id="timeline-controls-bar"></div>
+          <div id="timeline-area"></div>
+        </div>
       </div>
-      <aside id="right-panel"></aside>
     </div>
   </div>
   <script type="module" src="/playground/main.ts"></script>
