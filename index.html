@@ -9,39 +9,124 @@
   <link rel="stylesheet" href="/playground/index.css">
 </head>
 <body>
-  <div id="editor">
+  <div id="editor" data-layout="edit">
     <div id="main">
       <nav id="icon-sidebar"></nav>
       <div id="content-area">
-        <div id="top-half">
-          <aside id="left-panel"></aside>
-          <div id="center">
-            <div id="preview-area">
-              <div id="player-container">
-                <div id="player"></div>
-                <div id="export-progress" style="display:none">
-                  <div class="progress-overlay">
-                    <div class="progress-ring-wrap">
-                      <svg class="progress-ring-svg" viewBox="0 0 80 80">
-                        <circle class="progress-track" cx="40" cy="40" r="32"/>
-                        <circle class="progress-fill" id="progress-fill-circle" cx="40" cy="40" r="32"/>
-                      </svg>
-                      <span id="progress-pct">0%</span>
-                    </div>
-                    <p class="progress-label">Rendering video...</p>
-                    <button id="cancel-export-btn" class="btn-ghost">Cancel</button>
+
+        <!-- Shared: left panel (assets in edit/color/animation, folder list in assets mode) -->
+        <aside id="left-panel"></aside>
+
+        <!-- Shared: center column (preview + playback) -->
+        <div id="center">
+          <div id="preview-area">
+            <div id="player-container">
+              <div id="player"></div>
+              <div id="export-progress" style="display:none">
+                <div class="progress-overlay">
+                  <div class="progress-ring-wrap">
+                    <svg class="progress-ring-svg" viewBox="0 0 80 80">
+                      <circle class="progress-track" cx="40" cy="40" r="32"/>
+                      <circle class="progress-fill" id="progress-fill-circle" cx="40" cy="40" r="32"/>
+                    </svg>
+                    <span id="progress-pct">0%</span>
                   </div>
+                  <p class="progress-label">Rendering video...</p>
+                  <button id="cancel-export-btn" class="btn-ghost">Cancel</button>
                 </div>
               </div>
             </div>
-            <div id="playback-bar"></div>
           </div>
-          <aside id="right-panel"></aside>
+          <div id="playback-bar"></div>
         </div>
-        <div id="bottom-half">
+
+        <!-- Shared: right panel (properties in edit/animation) -->
+        <aside id="right-panel"></aside>
+
+        <!-- Shared: main timeline section -->
+        <div id="timeline-section">
           <div id="timeline-controls-bar"></div>
           <div id="timeline-area"></div>
         </div>
+
+        <!-- COLOR mode: color correction panel (right column, spans both rows) -->
+        <aside id="color-panel">
+          <div class="placeholder-panel">
+            <div class="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a7 7 0 0 1 7 7"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <p class="placeholder-title">Color Correction</p>
+            <p class="placeholder-sub">Color grading, LUTs, curves, and exposure controls will appear here</p>
+          </div>
+        </aside>
+
+        <!-- ANIMATION mode: keyframe properties panel (right column) -->
+        <aside id="keyframe-props-panel">
+          <div class="placeholder-panel">
+            <div class="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/>
+              </svg>
+            </div>
+            <p class="placeholder-title">Keyframe Properties</p>
+            <p class="placeholder-sub">Easing curves, value editors, and keyframe interpolation will appear here</p>
+          </div>
+        </aside>
+
+        <!-- ANIMATION mode: second timeline for keyframes only -->
+        <div id="keyframe-timeline-section">
+          <div class="kf-timeline-header">
+            <span class="kf-timeline-label">Keyframe Timeline</span>
+            <span class="kf-timeline-sub">Selected clip keyframes only</span>
+          </div>
+          <div class="placeholder-panel placeholder-panel--inline">
+            <p class="placeholder-sub">Select a clip to view and edit its keyframes on this precision timeline</p>
+          </div>
+        </div>
+
+        <!-- CANVAS mode: micro scrub bar (bottom strip) -->
+        <div id="micro-scrub-section">
+          <div class="micro-scrub-inner">
+            <div class="micro-scrub-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+              </svg>
+              <span>Micro scrub bar — time navigation only</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASSETS mode: folder structure panel (left column) -->
+        <aside id="asset-folder-panel">
+          <div class="placeholder-panel">
+            <div class="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <p class="placeholder-title">Folder Structure</p>
+            <p class="placeholder-sub">Project folders, smart collections, and import sources will appear here</p>
+          </div>
+        </aside>
+
+        <!-- ASSETS mode: metadata / tags / preview panel (right column) -->
+        <aside id="asset-meta-panel">
+          <div class="placeholder-panel">
+            <div class="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+              </svg>
+            </div>
+            <p class="placeholder-title">Metadata &amp; Tags</p>
+            <p class="placeholder-sub">Asset preview, tags, ratings, and file metadata will appear here</p>
+          </div>
+        </aside>
+
       </div>
     </div>
   </div>

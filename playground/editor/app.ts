@@ -124,7 +124,12 @@ export async function createEditor() {
     await composition.seek(0);
   }
 
-  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo);
+  const editorRoot = document.querySelector('#editor') as HTMLElement;
+  function handleLayoutChange(id: string) {
+    editorRoot.dataset.layout = id;
+  }
+
+  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange);
   setupLeftPanel(leftPanel, state, handleLoadDemo);
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);

@@ -2,89 +2,67 @@ function svgIcon(path: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
 }
 
-const TOP_ITEMS = [
+const LAYOUT_TABS = [
+  {
+    id: 'edit',
+    title: 'Edit',
+    icon: svgIcon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>'),
+  },
+  {
+    id: 'color',
+    title: 'Color',
+    icon: svgIcon('<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 8a4 4 0 0 1 0 8"/>'),
+  },
+  {
+    id: 'animation',
+    title: 'Animation',
+    icon: svgIcon('<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/><circle cx="5" cy="12" r="2" fill="currentColor" stroke="none"/>'),
+  },
+  {
+    id: 'canvas',
+    title: 'Canvas',
+    icon: svgIcon('<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>'),
+  },
   {
     id: 'assets',
     title: 'Assets',
-    icon: svgIcon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
-  },
-  {
-    id: 'scenes',
-    title: 'Scenes',
-    icon: svgIcon('<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'),
-  },
-  {
-    id: 'text',
-    title: 'Text',
-    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`,
-  },
-  {
-    id: 'keyframes',
-    title: 'Keyframes',
-    icon: svgIcon('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
-  },
-  {
-    id: 'effects',
-    title: 'Effects',
-    icon: svgIcon('<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>'),
-  },
-  {
-    id: 'transitions',
-    title: 'Transitions',
-    icon: svgIcon('<polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>'),
-  },
-  {
-    id: 'layers',
-    title: 'Layers',
-    icon: svgIcon('<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'),
-  },
-  {
-    id: 'shapes',
-    title: 'Shapes',
-    icon: svgIcon('<circle cx="12" cy="12" r="9"/>'),
+    icon: svgIcon('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'),
   },
 ];
 
-const BOTTOM_ITEMS = [
-  {
-    id: 'adjustments',
-    title: 'Adjustments',
-    icon: svgIcon('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>'),
-  },
-  {
-    id: 'settings',
-    title: 'Settings',
-    icon: svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>'),
-  },
-];
-
-export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDemo: () => void) {
+export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDemo: () => void, onLayoutChange: (id: string) => void) {
   el.innerHTML = `
     <div class="icon-sidebar-top">
-      ${TOP_ITEMS.map(item => `
-        <button class="icon-sidebar-btn${item.id === 'assets' ? ' active' : ''}" data-id="${item.id}" title="${item.title}">
-          ${item.icon}
+      ${LAYOUT_TABS.map(tab => `
+        <button class="icon-sidebar-btn${tab.id === 'edit' ? ' active' : ''}" data-id="${tab.id}" title="${tab.title}">
+          ${tab.icon}
+          <span class="tab-label">${tab.title}</span>
         </button>
       `).join('')}
     </div>
     <div class="icon-sidebar-bottom">
-      ${BOTTOM_ITEMS.map(item => `
-        <button class="icon-sidebar-btn" data-id="${item.id}" title="${item.title}">
-          ${item.icon}
-        </button>
-      `).join('')}
+      <button class="icon-sidebar-btn" data-id="settings" title="Load Demo">
+        ${svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>')}
+      </button>
       <button class="icon-sidebar-btn icon-sidebar-export" id="sidebar-export-btn" title="Export video">
         ${svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>')}
       </button>
     </div>
   `;
 
-  el.querySelectorAll('.icon-sidebar-btn[data-id]').forEach(btn => {
+  el.querySelectorAll<HTMLButtonElement>('.icon-sidebar-btn[data-id]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const id = (btn as HTMLElement).dataset.id;
+      const id = btn.dataset.id!;
       if (id === 'settings') {
         onLoadDemo();
+        return;
       }
+      const isLayoutTab = LAYOUT_TABS.some(t => t.id === id);
+      if (!isLayoutTab) return;
+
+      el.querySelectorAll('.icon-sidebar-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      onLayoutChange(id);
     });
   });
 
