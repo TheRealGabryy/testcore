@@ -61,7 +61,7 @@ input, textarea, [contenteditable] { user-select: text; }
 
 /* ─── LAYOUT: EDIT ───────────────────────────────────────────────────────── */
 #editor[data-layout="edit"] #content-area {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 2fr 3fr 2fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "left center right"
@@ -74,7 +74,7 @@ input, textarea, [contenteditable] { user-select: text; }
 
 /* ─── LAYOUT: COLOR ──────────────────────────────────────────────────────── */
 #editor[data-layout="color"] #content-area {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 2fr 3fr 2fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "left  center color"
@@ -87,14 +87,14 @@ input, textarea, [contenteditable] { user-select: text; }
 #editor[data-layout="color"] #right-panel      { display: none; }
 
 /* ─── LAYOUT: ANIMATION ──────────────────────────────────────────────────── */
-/* 6-column grid: top row — each panel gets 2/6 = 1/3 of width;
-   bottom row — each timeline gets 3/6 = 1/2 of width (side by side) */
+/* 14-column grid: top row — sides get 4/14 = 2/7, center gets 6/14 = 3/7;
+   bottom row — each timeline gets 7/14 = 1/2 (side by side, balanced) */
 #editor[data-layout="animation"] #content-area {
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(14, 1fr);
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "layers  layers  center  center  keyprops keyprops"
-    "tl      tl      tl      kftl    kftl     kftl";
+    "layers  layers  layers  layers  center  center  center  center  center  center  keyprops keyprops keyprops keyprops"
+    "tl      tl      tl      tl      tl      tl      tl      kftl    kftl    kftl    kftl     kftl     kftl     kftl";
 }
 #editor[data-layout="animation"] #left-panel                { grid-area: layers; display: flex; }
 #editor[data-layout="animation"] #center                    { grid-area: center; display: flex; }
