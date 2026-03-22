@@ -1,4 +1,4 @@
-import * as core from '@diffusionstudio/core-v4';
+import * as core from '@diffusionstudio/core';
 
 export const settings: core.CompositionSettings = {
   background: '#76b7f5',
