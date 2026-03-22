@@ -104,7 +104,7 @@ export async function createEditor() {
   }
 
   setupIconSidebar(iconSidebar, handleExport, handleLoadDemo);
-  setupLeftPanel(leftPanel, state);
+  setupLeftPanel(leftPanel, state, handleLoadDemo);
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);
   setupRightPanel(rightPanel, state);

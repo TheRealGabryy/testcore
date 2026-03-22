@@ -154,6 +154,26 @@ body { overflow: hidden; width: 100vw; height: 100vh; }
 }
 .assets-import-btn:hover { background: var(--bg-hover); color: var(--text); border-color: var(--text-3); }
 .assets-import-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.assets-demo-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+.assets-demo-btn:hover { background: var(--accent); color: #111; }
+.assets-demo-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .assets-body {
   flex: 1;
   overflow-y: auto;
@@ -503,7 +523,7 @@ body { overflow: hidden; width: 100vw; height: 100vh; }
 #tl-tracks { position: relative; }
 .tl-track { height: 40px; position: relative; border-bottom: 1px solid var(--border); }
 .tl-track:hover { background: rgba(232,184,75,0.04); }
-.tl-clip { position: absolute; top: 4px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; padding: 0 8px; overflow: hidden; user-select: none; min-width: 4px; transition: filter 0.1s; }
+.tl-clip { position: absolute; top: 0; height: 100%; border-radius: 0; cursor: pointer; display: flex; align-items: center; padding: 0 8px; overflow: hidden; user-select: none; min-width: 4px; transition: filter 0.1s; }
 .tl-clip:hover { filter: brightness(1.15); }
 .tl-clip.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tl-clip-label { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
