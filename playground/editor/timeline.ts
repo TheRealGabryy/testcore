@@ -93,14 +93,19 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   const tlPlayhead = areaEl.querySelector('#tl-playhead') as HTMLDivElement;
 
   let seeking = false;
+  let playheadDragging = false;
+
+  const EDGE_ZONE = 8;
 
   interface DragState {
     clipEl: HTMLElement;
     clipId: string;
     layerId: string;
     originalDelay: number;
+    originalDuration: number;
     startClientX: number;
     moved: boolean;
+    mode: 'move' | 'resize-left' | 'resize-right';
   }
   let drag: DragState | null = null;
 
@@ -108,7 +113,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     if (!drag) return;
     if (!drag.moved && Math.abs(e.clientX - drag.startClientX) > 3) {
       drag.moved = true;
-      document.body.style.cursor = 'grabbing';
+      document.body.style.cursor = drag.mode === 'move' ? 'grabbing' : 'ew-resize';
     }
     if (!drag.moved) return;
 
@@ -117,13 +122,31 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     if (!editorClip) return;
 
     const deltaSeconds = (e.clientX - drag.startClientX) / state.zoom;
-    const newDelay = Math.max(0, drag.originalDelay + deltaSeconds);
-    editorClip.clip.delay = newDelay;
-    drag.clipEl.style.left = `${newDelay * state.zoom}px`;
-    drag.clipEl.classList.add('dragging');
+    const raw = editorClip.clip as unknown as Record<string, unknown>;
+
+    if (drag.mode === 'move') {
+      const newDelay = Math.max(0, drag.originalDelay + deltaSeconds);
+      raw['delay'] = newDelay;
+      drag.clipEl.style.left = `${newDelay * state.zoom}px`;
+      drag.clipEl.classList.add('dragging');
+    } else if (drag.mode === 'resize-right') {
+      const newDuration = Math.max(0.1, drag.originalDuration + deltaSeconds);
+      raw['duration'] = newDuration;
+      drag.clipEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
+    } else if (drag.mode === 'resize-left') {
+      const maxDelta = drag.originalDelay;
+      const clampedDelta = Math.max(-maxDelta, deltaSeconds);
+      const newDelay = drag.originalDelay + clampedDelta;
+      const newDuration = Math.max(0.1, drag.originalDuration - clampedDelta);
+      raw['delay'] = newDelay;
+      raw['duration'] = newDuration;
+      drag.clipEl.style.left = `${newDelay * state.zoom}px`;
+      drag.clipEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
+    }
   });
 
   document.addEventListener('mouseup', async () => {
+    playheadDragging = false;
     if (!drag) return;
     const moved = drag.moved;
     drag.clipEl.classList.remove('dragging');
@@ -236,8 +259,31 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     tlTracks.querySelectorAll('.tl-clip').forEach(clip => {
       const clipEl = clip as HTMLElement;
 
+      clipEl.addEventListener('mousemove', (e) => {
+        if (drag) return;
+        const rect = clipEl.getBoundingClientRect();
+        const distFromLeft = e.clientX - rect.left;
+        const distFromRight = rect.right - e.clientX;
+        if (distFromRight <= EDGE_ZONE || distFromLeft <= EDGE_ZONE) {
+          clipEl.style.cursor = 'ew-resize';
+        } else {
+          clipEl.style.cursor = '';
+        }
+      });
+
+      clipEl.addEventListener('mouseleave', () => {
+        if (!drag) clipEl.style.cursor = '';
+      });
+
       clipEl.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
+        const rect = clipEl.getBoundingClientRect();
+        const distFromLeft = e.clientX - rect.left;
+        const distFromRight = rect.right - e.clientX;
+        let mode: 'move' | 'resize-left' | 'resize-right' = 'move';
+        if (distFromRight <= EDGE_ZONE) mode = 'resize-right';
+        else if (distFromLeft <= EDGE_ZONE) mode = 'resize-left';
+
         const id = clipEl.dataset.clipId!;
         const lid = clipEl.dataset.layerId!;
         const editorLayer = state.editorLayers.find(l => l.id === lid);
@@ -250,8 +296,10 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
           clipId: id,
           layerId: lid,
           originalDelay: editorClip.clip.delay,
+          originalDuration: editorClip.clip.duration,
           startClientX: e.clientX,
           moved: false,
+          mode,
         };
         e.preventDefault();
         e.stopPropagation();
@@ -297,15 +345,18 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     drawRuler();
   });
 
-  tlScroll.addEventListener('click', (e) => {
+  tlRulerCanvas.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    playheadDragging = true;
     const rect = tlScroll.getBoundingClientRect();
     const x = e.clientX - rect.left + tlScroll.scrollLeft;
-    const t = x / state.zoom;
-    if (t >= 0) state.composition.seek(Math.min(t, state.composition.duration));
+    const t = Math.max(0, Math.min(x / state.zoom, state.composition.duration));
+    state.composition.seek(t);
   });
 
   tlScroll.addEventListener('mousemove', async (e) => {
     if (!(e.buttons & 1)) return;
+    if (!playheadDragging) return;
     if (seeking) return;
     seeking = true;
     const rect = tlScroll.getBoundingClientRect();

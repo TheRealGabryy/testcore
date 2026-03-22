@@ -70,6 +70,17 @@ export async function createEditor() {
 
   async function handleLoadDemo() {
     if (!confirm('Load demo composition? This will clear the current project.')) return;
+
+    const LAYER_COLORS = [
+      '#3b7dd8', '#22c55e', '#e59d2a', '#06b6d4',
+      '#f97316', '#e05c8e', '#a78bfa', '#34d399',
+    ];
+    const CLIP_COLORS: Record<string, string> = {
+      VIDEO: '#3b7dd8', AUDIO: '#22c55e', IMAGE: '#e59d2a',
+      TEXT: '#06b6d4', CAPTION: '#f97316', RECT: '#e05c8e',
+      ELLIPSE: '#e05c8e', POLYGON: '#e05c8e', BASE: '#64748b',
+    };
+
     composition.clear();
     state.editorLayers.length = 0;
     state.selectedClipId = null;
@@ -77,30 +88,40 @@ export async function createEditor() {
     state.emit('layers:change');
     state.emit('selection:change');
 
-    const { main: demoMain } = await import('../composition');
+    try {
+      const { main: demoMain } = await import('../composition');
+      await demoMain(composition);
+    } catch (err) {
+      console.error('Demo failed to load:', err);
+      alert('Demo failed to load. Check console for details.');
+      state.emit('layers:change');
+      state.emit('timeline:change');
+      return;
+    }
 
-    await demoMain(composition);
-
-    for (const layer of composition.layers) {
+    const reversedLayers = [...composition.layers].reverse();
+    for (const layer of reversedLayers) {
+      const idx = state.editorLayers.length;
       const editorLayer = {
         id: layer.id,
-        name: `Layer ${state.editorLayers.length + 1}`,
+        name: `Layer ${idx + 1}`,
         layer,
         clips: layer.clips.map(clip => ({
           id: clip.id,
-          name: clip.type,
+          name: String(clip.type),
           clip,
-          color: '#3b7dd8',
+          color: CLIP_COLORS[String(clip.type)] ?? '#64748b',
         })),
         visible: true,
         locked: false,
-        color: '#3b7dd8',
+        color: LAYER_COLORS[idx % LAYER_COLORS.length],
       };
       state.editorLayers.push(editorLayer);
     }
 
     state.emit('layers:change');
     state.emit('timeline:change');
+    await composition.seek(0);
   }
 
   setupIconSidebar(iconSidebar, handleExport, handleLoadDemo);

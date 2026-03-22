@@ -111,7 +111,7 @@ export async function main(composition: core.Composition) {
   await composition.add(audioLayer);
   await audioLayer.sequential();
   await audioLayer.add(audioClip);
-  await audioClip.removeSilences();
+  try { await audioClip.removeSilences(); } catch { /* optional */ }
 
   const captionLayer = new core.Layer();
   await composition.add(captionLayer);
