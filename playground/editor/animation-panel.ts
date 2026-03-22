@@ -186,11 +186,6 @@ function drawTracks(
     ctx.stroke();
 
     const centerY = rowY + rowH * dpr / 2;
-    ctx.strokeStyle = sett.appearance.bgActive;
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, centerY); ctx.lineTo(cw, centerY);
-    ctx.stroke();
 
     const frames = getFrames(clip, prop.key);
     if (frames.length >= 2) {
@@ -444,14 +439,6 @@ export function setupAnimationPanel(
     timelineEl.innerHTML = '';
     selKf = null;
 
-    const headerRow = document.createElement('div');
-    headerRow.className = 'kft-header';
-
-    rulerCanvas = document.createElement('canvas');
-    rulerCanvas.className = 'kft-ruler-canvas';
-    headerRow.appendChild(rulerCanvas);
-    timelineEl.appendChild(headerRow);
-
     const body = document.createElement('div');
     body.className = 'kft-body';
     timelineEl.appendChild(body);
@@ -468,9 +455,21 @@ export function setupAnimationPanel(
       labelsCol.appendChild(lbl);
     }
 
+    const tracksPanel = document.createElement('div');
+    tracksPanel.className = 'kft-tracks-panel';
+    body.appendChild(tracksPanel);
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'kft-header';
+
+    rulerCanvas = document.createElement('canvas');
+    rulerCanvas.className = 'kft-ruler-canvas';
+    headerRow.appendChild(rulerCanvas);
+    tracksPanel.appendChild(headerRow);
+
     const tracksWrap = document.createElement('div');
     tracksWrap.className = 'kft-tracks-wrap';
-    body.appendChild(tracksWrap);
+    tracksPanel.appendChild(tracksWrap);
 
     tracksScrollEl = document.createElement('div');
     tracksScrollEl.className = 'kft-tracks-scroll';
@@ -482,7 +481,7 @@ export function setupAnimationPanel(
 
     playheadEl = document.createElement('div');
     playheadEl.className = 'kft-playhead';
-    tracksScrollEl.appendChild(playheadEl);
+    tracksPanel.appendChild(playheadEl);
 
     tracksScrollEl.addEventListener('scroll', () => {
       scrollX = tracksScrollEl!.scrollLeft;
