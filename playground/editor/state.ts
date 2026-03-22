@@ -1,5 +1,6 @@
 import * as core from '@diffusionstudio/core';
 import type { EditorClip, EditorLayer, MediaItem } from './types';
+import type { ColorGrading } from './color-grading';
 
 const CLIP_COLORS: Record<string, string> = {
   VIDEO: '#3b7dd8',
@@ -28,6 +29,7 @@ export class EditorState {
   selectedLayerId: string | null = null;
   zoom = 80;
   fps = 30;
+  colorGradingMap = new Map<string, ColorGrading>();
 
   private handlers = new Map<string, Handler[]>();
 

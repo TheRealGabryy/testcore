@@ -5,6 +5,8 @@ import { setupLeftPanel } from './left-panel';
 import { setupPreview } from './preview';
 import { setupTimeline } from './timeline';
 import { setupRightPanel } from './right-panel';
+import { setupColorPanel } from './color-panel';
+import { createColorGradingOverlay } from './color-grading';
 
 export async function createEditor() {
   const composition = new core.Composition({ background: '#141416' });
@@ -16,6 +18,8 @@ export async function createEditor() {
   const timelineControlsBar = document.querySelector('#timeline-controls-bar') as HTMLElement;
   const timelineArea = document.querySelector('#timeline-area') as HTMLElement;
   const rightPanel = document.querySelector('#right-panel') as HTMLElement;
+  const colorPanel = document.querySelector('#color-panel') as HTMLElement;
+  const playerEl = document.querySelector('#player') as HTMLElement;
 
   async function handleExport() {
     const progressEl = document.querySelector('#export-progress') as HTMLElement;
@@ -139,9 +143,16 @@ export async function createEditor() {
     }, 50);
   }
 
+  const gradingOverlay = createColorGradingOverlay(playerEl, () => {
+    const sel = state.getSelectedClip();
+    if (!sel) return null;
+    return state.colorGradingMap.get(sel.editorClip.id) ?? null;
+  });
+
   setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange);
   setupLeftPanel(leftPanel, state, handleLoadDemo);
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);
   setupRightPanel(rightPanel, state);
+  setupColorPanel(colorPanel, state, () => gradingOverlay.update());
 }
