@@ -61,7 +61,7 @@ input, textarea, [contenteditable] { user-select: text; }
 
 /* ─── LAYOUT: EDIT ───────────────────────────────────────────────────────── */
 #editor[data-layout="edit"] #content-area {
-  grid-template-columns: 260px 1fr 260px;
+  grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "left center right"
@@ -74,7 +74,7 @@ input, textarea, [contenteditable] { user-select: text; }
 
 /* ─── LAYOUT: COLOR ──────────────────────────────────────────────────────── */
 #editor[data-layout="color"] #content-area {
-  grid-template-columns: 260px 1fr 300px;
+  grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "left  center color"
@@ -87,19 +87,20 @@ input, textarea, [contenteditable] { user-select: text; }
 #editor[data-layout="color"] #right-panel      { display: none; }
 
 /* ─── LAYOUT: ANIMATION ──────────────────────────────────────────────────── */
+/* 6-column grid: top row — each panel gets 2/6 = 1/3 of width;
+   bottom row — each timeline gets 3/6 = 1/2 of width (side by side) */
 #editor[data-layout="animation"] #content-area {
-  grid-template-columns: 220px 1fr 260px;
-  grid-template-rows: 2fr 1fr 1fr;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "layers center keyprops"
-    "tl     tl     tl"
-    "kftl   kftl   kftl";
+    "layers  layers  center  center  keyprops keyprops"
+    "tl      tl      tl      kftl    kftl     kftl";
 }
 #editor[data-layout="animation"] #left-panel                { grid-area: layers; display: flex; }
 #editor[data-layout="animation"] #center                    { grid-area: center; display: flex; }
 #editor[data-layout="animation"] #keyframe-props-panel      { grid-area: keyprops; display: flex; flex-direction: column; }
 #editor[data-layout="animation"] #timeline-section          { grid-area: tl; display: flex; }
-#editor[data-layout="animation"] #keyframe-timeline-section { grid-area: kftl; display: flex; flex-direction: column; }
+#editor[data-layout="animation"] #keyframe-timeline-section { grid-area: kftl; display: flex; flex-direction: column; border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
 #editor[data-layout="animation"] #right-panel               { display: none; }
 
 /* ─── LAYOUT: CANVAS ─────────────────────────────────────────────────────── */
