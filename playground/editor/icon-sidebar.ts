@@ -30,7 +30,7 @@ const LAYOUT_TABS = [
   },
 ];
 
-export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDemo: () => void, onLayoutChange: (id: string) => void) {
+export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDemo: () => void, onLayoutChange: (id: string) => void, onOpenSettings: () => void) {
   el.innerHTML = `
     <div class="icon-sidebar-top">
       ${LAYOUT_TABS.map(tab => `
@@ -40,8 +40,11 @@ export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDe
       `).join('')}
     </div>
     <div class="icon-sidebar-bottom">
-      <button class="icon-sidebar-btn" data-id="settings" title="Load Demo">
+      <button class="icon-sidebar-btn" data-id="demo" title="Load Demo">
         ${svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>')}
+      </button>
+      <button class="icon-sidebar-btn" id="sidebar-settings-btn" title="Editor Settings">
+        ${svgIcon('<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="2.5" fill="var(--bg)" stroke="currentColor"/><circle cx="16" cy="12" r="2.5" fill="var(--bg)" stroke="currentColor"/><circle cx="7" cy="18" r="2.5" fill="var(--bg)" stroke="currentColor"/>')}
       </button>
       <button class="icon-sidebar-btn icon-sidebar-export" id="sidebar-export-btn" title="Export video">
         ${svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>')}
@@ -52,7 +55,7 @@ export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDe
   el.querySelectorAll<HTMLButtonElement>('.icon-sidebar-btn[data-id]').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id!;
-      if (id === 'settings') {
+      if (id === 'demo') {
         onLoadDemo();
         return;
       }
@@ -65,5 +68,6 @@ export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDe
     });
   });
 
+  el.querySelector('#sidebar-settings-btn')!.addEventListener('click', onOpenSettings);
   el.querySelector('#sidebar-export-btn')!.addEventListener('click', onExport);
 }

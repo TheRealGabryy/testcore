@@ -8,8 +8,12 @@ import { setupRightPanel } from './right-panel';
 import { setupColorPanel } from './color-panel';
 import { createColorGradingOverlay } from './color-grading';
 import { setupAnimationPanel } from './animation-panel';
+import { initSettings, getSettings as _getSettings } from './settings';
+import { openSettingsPanel } from './settings-panel';
 
 export async function createEditor() {
+  initSettings();
+
   const composition = new core.Composition({ background: '#141416' });
   const state = new EditorState(composition);
 
@@ -78,14 +82,16 @@ export async function createEditor() {
   async function handleLoadDemo() {
     if (!confirm('Load demo composition? This will clear the current project.')) return;
 
+    const _sett = _getSettings();
+    const _c = _sett.clipColors;
     const LAYER_COLORS = [
       '#3b7dd8', '#22c55e', '#e59d2a', '#06b6d4',
       '#f97316', '#e05c8e', '#a78bfa', '#34d399',
     ];
     const CLIP_COLORS: Record<string, string> = {
-      VIDEO: '#3b7dd8', AUDIO: '#22c55e', IMAGE: '#e59d2a',
-      TEXT: '#06b6d4', CAPTION: '#f97316', RECT: '#e05c8e',
-      ELLIPSE: '#e05c8e', POLYGON: '#e05c8e', BASE: '#64748b',
+      VIDEO: _c.video, AUDIO: _c.audio, IMAGE: _c.image,
+      TEXT: _c.text, CAPTION: _c.caption, RECT: _c.shape,
+      ELLIPSE: _c.shape, POLYGON: _c.shape, BASE: _c.base,
     };
 
     composition.clear();
@@ -152,7 +158,7 @@ export async function createEditor() {
     return state.colorGradingMap.get(sel.editorClip.id) ?? null;
   });
 
-  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange);
+  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange, openSettingsPanel);
   setupLeftPanel(leftPanel, state, handleLoadDemo);
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);

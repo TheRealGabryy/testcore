@@ -1,20 +1,20 @@
 import * as core from '@diffusionstudio/core';
 import type { EditorClip, EditorLayer, MediaItem } from './types';
 import type { ColorGrading } from './color-grading';
+import { getSettings } from './settings';
 
 const VISUAL_CLIP_TYPES = new Set(['VIDEO', 'IMAGE', 'TEXT', 'RECT', 'ELLIPSE', 'POLYGON', 'CAPTION']);
 
-const CLIP_COLORS: Record<string, string> = {
-  VIDEO: '#3b7dd8',
-  AUDIO: '#22c55e',
-  IMAGE: '#e59d2a',
-  TEXT: '#06b6d4',
-  CAPTION: '#f97316',
-  RECT: '#e05c8e',
-  ELLIPSE: '#e05c8e',
-  POLYGON: '#e05c8e',
-  BASE: '#64748b',
-};
+function getClipColor(type: string): string {
+  const c = getSettings().clipColors;
+  const map: Record<string, string> = {
+    VIDEO: c.video, AUDIO: c.audio, IMAGE: c.image,
+    TEXT: c.text, CAPTION: c.caption,
+    RECT: c.shape, ELLIPSE: c.shape, POLYGON: c.shape,
+    BASE: c.base,
+  };
+  return map[type] ?? c.base;
+}
 
 const LAYER_COLORS = [
   '#3b7dd8', '#22c55e', '#e59d2a', '#06b6d4',
@@ -85,7 +85,7 @@ export class EditorState {
       id: clip.id,
       name: name ?? clip.type,
       clip,
-      color: CLIP_COLORS[clip.type] ?? '#64748b',
+      color: getClipColor(String(clip.type)),
     };
     editorLayer.clips.push(editorClip);
     this.emit('layers:change');

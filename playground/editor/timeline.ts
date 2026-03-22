@@ -1,10 +1,7 @@
 import type { EditorState } from './state';
 import type { EditorLayer } from './types';
 import { TimelineSnappingEngine } from './snapping-timeline';
-
-const TRACK_H_NORMAL = 44;
-const TRACK_H_AUDIO  = 30;
-const TRACK_H_TEXT   = 22;
+import { getSettings } from './settings';
 
 const AUDIO_TYPES  = new Set(['AUDIO']);
 const TEXT_TYPES   = new Set(['TEXT', 'CAPTION']);
@@ -19,10 +16,11 @@ function layerType(layer: EditorLayer): 'visual' | 'audio' | 'text' {
 }
 
 function trackHeight(layer: EditorLayer): number {
+  const s = getSettings();
   const t = layerType(layer);
-  if (t === 'audio') return TRACK_H_AUDIO;
-  if (t === 'text')  return TRACK_H_TEXT;
-  return TRACK_H_NORMAL;
+  if (t === 'audio') return s.timeline.trackAudioHeight;
+  if (t === 'text')  return s.timeline.trackTextHeight;
+  return s.timeline.trackNormalHeight;
 }
 
 function totalTracksHeight(layers: EditorLayer[]): number {
@@ -354,17 +352,18 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     ctx.scale(devicePixelRatio, devicePixelRatio);
 
     const step = computeStep();
-    ctx.fillStyle = '#55556a';
-    ctx.font = '10px Inter, system-ui, sans-serif';
+    const s = getSettings();
+    ctx.fillStyle = s.timeline.rulerMajorTick;
+    ctx.font = `${s.typography.rulerFontSize}px Inter, system-ui, sans-serif`;
     ctx.textBaseline = 'top';
 
     for (let t = 0; t <= Math.ceil(getContentWidth() / state.zoom) + step; t += step) {
       const x = t * state.zoom;
       const isMajor = Math.round(t * 10) % Math.round(step * 10 * 2) === 0;
-      ctx.fillStyle = isMajor ? '#55556a' : '#33333d';
+      ctx.fillStyle = isMajor ? s.timeline.rulerMajorTick : s.timeline.rulerMinorTick;
       ctx.fillRect(x, isMajor ? 14 : 20, 1, isMajor ? 14 : 8);
       if (isMajor) {
-        ctx.fillStyle = '#8e8e9e';
+        ctx.fillStyle = s.timeline.rulerText;
         ctx.fillText(formatTime(t), x + 3, 4);
       }
     }

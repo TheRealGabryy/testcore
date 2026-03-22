@@ -1,9 +1,10 @@
 import type { EditorState } from './state';
+import { getSettings } from './settings';
 
-const ROW_H = 24;
-const LABEL_W = 88;
-const RULER_H = 24;
-const DIAMOND = 10;
+function ROW_H() { return getSettings().keyframes.rowHeight; }
+function LABEL_W() { return getSettings().keyframes.labelWidth; }
+function RULER_H() { return getSettings().keyframes.rulerHeight; }
+function DIAMOND() { return getSettings().keyframes.diamondSize; }
 
 interface PropDef {
   key: string;
@@ -116,11 +117,13 @@ function removeKf(clip: Record<string, unknown>, key: string, frameIndex: number
 }
 
 function drawRuler(ctx: CanvasRenderingContext2D, w: number, zoom: number, scrollX: number, dpr: number) {
-  const h = RULER_H * dpr;
+  const sett = getSettings();
+  const rulerH = RULER_H();
+  const h = rulerH * dpr;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#101928';
+  ctx.fillStyle = sett.appearance.bgSurface;
   ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = '#1a2b45';
+  ctx.strokeStyle = sett.appearance.borderPrimary;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, h - 0.5); ctx.lineTo(w, h - 0.5);
@@ -132,14 +135,14 @@ function drawRuler(ctx: CanvasRenderingContext2D, w: number, zoom: number, scrol
   const startSec = Math.floor(secStart / interval) * interval;
   const endSec = (scrollX + w / dpr) / zoom + interval;
 
-  ctx.fillStyle = '#7a93bc';
-  ctx.font = `${9 * dpr}px Inter, sans-serif`;
+  ctx.fillStyle = sett.appearance.textSecondary;
+  ctx.font = `${sett.typography.rulerFontSize * dpr}px Inter, sans-serif`;
   ctx.textAlign = 'left';
 
   for (let s = startSec; s <= endSec; s += interval) {
     const x = (s * zoom - scrollX) * dpr;
     if (x < 0 || x > w) continue;
-    ctx.strokeStyle = '#243655';
+    ctx.strokeStyle = sett.appearance.borderLight;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, h * 0.55); ctx.lineTo(x, h);
@@ -163,24 +166,27 @@ function drawTracks(
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, cw, ch);
 
+  const sett = getSettings();
+  const rowH = ROW_H();
+  const diamondSize = DIAMOND();
   const clipDelay = timeToSecs((clip as any).delay ?? (clip as any)._delay ?? 0);
 
   for (let i = 0; i < props.length; i++) {
     const prop = props[i];
-    const rowY = i * ROW_H * dpr;
+    const rowY = i * rowH * dpr;
 
-    ctx.fillStyle = i % 2 === 0 ? '#101928' : '#0d1a28';
-    ctx.fillRect(0, rowY, cw, ROW_H * dpr);
+    ctx.fillStyle = i % 2 === 0 ? sett.timeline.trackBg : sett.timeline.trackAltBg;
+    ctx.fillRect(0, rowY, cw, rowH * dpr);
 
-    ctx.strokeStyle = '#1a2b45';
+    ctx.strokeStyle = sett.appearance.borderPrimary;
     ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(0, rowY + ROW_H * dpr - 0.5);
-    ctx.lineTo(cw, rowY + ROW_H * dpr - 0.5);
+    ctx.moveTo(0, rowY + rowH * dpr - 0.5);
+    ctx.lineTo(cw, rowY + rowH * dpr - 0.5);
     ctx.stroke();
 
-    const centerY = rowY + ROW_H * dpr / 2;
-    ctx.strokeStyle = '#1f3050';
+    const centerY = rowY + rowH * dpr / 2;
+    ctx.strokeStyle = sett.appearance.bgActive;
     ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(0, centerY); ctx.lineTo(cw, centerY);
@@ -188,7 +194,7 @@ function drawTracks(
 
     const frames = getFrames(clip, prop.key);
     if (frames.length >= 2) {
-      ctx.strokeStyle = '#e8b84b';
+      ctx.strokeStyle = sett.keyframes.keyframeLine;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       let first = true;
@@ -206,11 +212,11 @@ function drawTracks(
       const x = (t * zoom - scrollX) * dpr;
       if (x < -20 || x > cw + 20) return;
       const isSelected = selKf?.propKey === prop.key && selKf.frameIndex === fi;
-      const d = DIAMOND * dpr;
+      const d = diamondSize * dpr;
       ctx.save();
       ctx.translate(x, centerY);
       ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = isSelected ? '#22c55e' : '#e8b84b';
+      ctx.fillStyle = isSelected ? sett.keyframes.keyframeSelected : sett.keyframes.keyframeColor;
       ctx.strokeStyle = isSelected ? '#16a34a' : '#a07820';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -300,7 +306,7 @@ export function setupAnimationPanel(
   function redrawTracks() {
     const clip = getClip();
     if (!tracksCanvas || !clip) return;
-    const h = props.length * ROW_H;
+    const h = props.length * ROW_H();
     const pw = tracksScrollEl?.clientWidth ?? 400;
     tracksCanvas.style.width = `${pw}px`;
     tracksCanvas.style.height = `${h}px`;
@@ -311,9 +317,9 @@ export function setupAnimationPanel(
     if (rulerCanvas && tracksScrollEl) {
       const rw = tracksScrollEl.clientWidth;
       rulerCanvas.style.width = `${rw}px`;
-      rulerCanvas.style.height = `${RULER_H}px`;
+      rulerCanvas.style.height = `${RULER_H()}px`;
       rulerCanvas.width = Math.round(rw * dpr);
-      rulerCanvas.height = Math.round(RULER_H * dpr);
+      rulerCanvas.height = Math.round(RULER_H() * dpr);
       const ctx = rulerCanvas.getContext('2d')!;
       drawRuler(ctx, rulerCanvas.width, state.zoom, scrollX, dpr);
     }
@@ -452,7 +458,7 @@ export function setupAnimationPanel(
 
     const labelsCol = document.createElement('div');
     labelsCol.className = 'kft-labels';
-    labelsCol.style.width = `${LABEL_W}px`;
+    labelsCol.style.width = `${LABEL_W()}px`;
     body.appendChild(labelsCol);
 
     for (const prop of props) {
@@ -488,7 +494,7 @@ export function setupAnimationPanel(
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
       const clickedTimeSecs = (cx + scrollX) / state.zoom;
-      const rowIndex = Math.floor(cy / ROW_H);
+      const rowIndex = Math.floor(cy / ROW_H());
       const prop = props[rowIndex];
       if (!prop) { state.composition.seek(clickedTimeSecs); return; }
 
@@ -499,7 +505,7 @@ export function setupAnimationPanel(
       for (let fi = 0; fi < frames.length; fi++) {
         const t = clipDelay + timeToSecs(frames[fi].time);
         const dx = (t * state.zoom - scrollX) - cx;
-        const dy = (rowIndex + 0.5) * ROW_H - cy;
+        const dy = (rowIndex + 0.5) * ROW_H() - cy;
         if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
           selKf = { propKey: prop.key, frameIndex: fi };
           redrawTracks();
