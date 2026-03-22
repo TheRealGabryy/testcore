@@ -94,9 +94,6 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   let seeking = false;
   let playheadDragging = false;
-  let dragRafId: number | null = null;
-  let dragUpdating = false;
-  let pendingDragUpdate = false;
 
   const EDGE_ZONE = 8;
   const GRID = 1 / 16;
@@ -107,6 +104,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   interface DragState {
     clipEl: HTMLElement;
+    ghostEl: HTMLElement;
     clipId: string;
     layerId: string;
     originalDelay: number;
@@ -114,80 +112,71 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     startClientX: number;
     moved: boolean;
     mode: 'move' | 'resize-left' | 'resize-right';
+    pendingDelay: number;
+    pendingDuration: number;
   }
   let drag: DragState | null = null;
+
+  function createGhost(clipEl: HTMLElement, trackEl: HTMLElement): HTMLElement {
+    const ghost = document.createElement('div');
+    ghost.className = 'tl-clip-ghost';
+    ghost.style.left = clipEl.style.left;
+    ghost.style.width = clipEl.style.width;
+    ghost.style.backgroundColor = window.getComputedStyle(clipEl).backgroundColor;
+    trackEl.appendChild(ghost);
+    return ghost;
+  }
 
   document.addEventListener('mousemove', (e) => {
     if (!drag) return;
     if (!drag.moved && Math.abs(e.clientX - drag.startClientX) > 3) {
       drag.moved = true;
       document.body.style.cursor = drag.mode === 'move' ? 'grabbing' : 'ew-resize';
+      drag.clipEl.style.opacity = '0.35';
     }
     if (!drag.moved) return;
 
-    const editorLayer = state.editorLayers.find(l => l.id === drag!.layerId);
-    const editorClip = editorLayer?.clips.find(c => c.id === drag!.clipId);
-    if (!editorClip) return;
-
     const deltaSeconds = (e.clientX - drag.startClientX) / state.zoom;
-    const raw = editorClip.clip as unknown as Record<string, unknown>;
 
     if (drag.mode === 'move') {
       const newDelay = snap(Math.max(0, drag.originalDelay + deltaSeconds));
-      raw['delay'] = newDelay;
-      drag.clipEl.style.left = `${newDelay * state.zoom}px`;
-      drag.clipEl.classList.add('dragging');
+      drag.pendingDelay = newDelay;
+      drag.ghostEl.style.left = `${newDelay * state.zoom}px`;
     } else if (drag.mode === 'resize-right') {
       const newDuration = snap(Math.max(GRID, drag.originalDuration + deltaSeconds));
-      raw['duration'] = newDuration;
-      drag.clipEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
+      drag.pendingDuration = newDuration;
+      drag.ghostEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
     } else if (drag.mode === 'resize-left') {
       const maxDelta = drag.originalDelay;
       const clampedDelta = Math.max(-maxDelta, deltaSeconds);
       const newDelay = snap(Math.max(0, drag.originalDelay + clampedDelta));
       const newDuration = snap(Math.max(GRID, drag.originalDuration - (newDelay - drag.originalDelay)));
-      raw['delay'] = newDelay;
-      raw['duration'] = newDuration;
-      drag.clipEl.style.left = `${newDelay * state.zoom}px`;
-      drag.clipEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
-    }
-
-    if (dragRafId === null) {
-      dragRafId = requestAnimationFrame(() => {
-        dragRafId = null;
-        scheduleDragUpdate();
-      });
+      drag.pendingDelay = newDelay;
+      drag.pendingDuration = newDuration;
+      drag.ghostEl.style.left = `${newDelay * state.zoom}px`;
+      drag.ghostEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
     }
   });
-
-  async function scheduleDragUpdate() {
-    if (dragUpdating) {
-      pendingDragUpdate = true;
-      return;
-    }
-    dragUpdating = true;
-    await state.composition.update();
-    dragUpdating = false;
-    if (pendingDragUpdate) {
-      pendingDragUpdate = false;
-      scheduleDragUpdate();
-    }
-  }
 
   document.addEventListener('mouseup', async () => {
     playheadDragging = false;
     if (!drag) return;
     const moved = drag.moved;
-    drag.clipEl.classList.remove('dragging');
+    const { clipId, layerId, pendingDelay, pendingDuration } = drag;
+
+    drag.ghostEl.remove();
+    drag.clipEl.style.opacity = '';
     document.body.style.cursor = '';
-    if (dragRafId !== null) {
-      cancelAnimationFrame(dragRafId);
-      dragRafId = null;
-    }
-    dragUpdating = false;
-    pendingDragUpdate = false;
     drag = null;
+
     if (moved) {
+      const editorLayer = state.editorLayers.find(l => l.id === layerId);
+      const editorClip = editorLayer?.clips.find(c => c.id === clipId);
+      if (editorClip) {
+        const raw = editorClip.clip as unknown as Record<string, unknown>;
+        raw['delay'] = pendingDelay;
+        raw['duration'] = pendingDuration;
+      }
       state.emit('timeline:change');
       await state.composition.seek(state.composition.currentTime);
     }
@@ -326,8 +315,11 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
         if (!editorClip) return;
         state.selectClip(id);
         state.selectLayer(lid);
+        const trackEl = clipEl.closest('.tl-track') as HTMLElement;
+        const ghost = createGhost(clipEl, trackEl);
         drag = {
           clipEl,
+          ghostEl: ghost,
           clipId: id,
           layerId: lid,
           originalDelay: editorClip.clip.delay,
@@ -335,6 +327,8 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
           startClientX: e.clientX,
           moved: false,
           mode,
+          pendingDelay: editorClip.clip.delay,
+          pendingDuration: editorClip.clip.duration,
         };
         e.preventDefault();
         e.stopPropagation();
