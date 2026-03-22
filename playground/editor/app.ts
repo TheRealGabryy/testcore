@@ -3,7 +3,7 @@ import { EditorState } from './state';
 import { setupToolbar } from './toolbar';
 import { setupLeftPanel } from './left-panel';
 import { setupPreview } from './preview';
-import { setupTimeline } from './timeline';
+import { setupProfessionalTimeline } from '../timeline/index';
 import { setupRightPanel } from './right-panel';
 
 export async function createEditor() {
@@ -106,6 +106,6 @@ export async function createEditor() {
   setupToolbar(topbar, state, handleExport, handleLoadDemo);
   setupLeftPanel(leftPanel, state);
   setupPreview(playbackBar, state);
-  setupTimeline(timelineControlsBar, timelineArea, state);
+  setupProfessionalTimeline(timelineControlsBar, timelineArea, state);
   setupRightPanel(rightPanel, state);
 }
