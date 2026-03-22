@@ -1,6 +1,6 @@
 import * as core from '@diffusionstudio/core';
 import { EditorState } from './state';
-import { setupToolbar } from './toolbar';
+import { setupIconSidebar } from './icon-sidebar';
 import { setupLeftPanel } from './left-panel';
 import { setupPreview } from './preview';
 import { setupTimeline } from './timeline';
@@ -10,7 +10,7 @@ export async function createEditor() {
   const composition = new core.Composition({ background: '#141416' });
   const state = new EditorState(composition);
 
-  const topbar = document.querySelector('#topbar') as HTMLElement;
+  const iconSidebar = document.querySelector('#icon-sidebar') as HTMLElement;
   const leftPanel = document.querySelector('#left-panel') as HTMLElement;
   const playbackBar = document.querySelector('#playback-bar') as HTMLElement;
   const timelineControlsBar = document.querySelector('#timeline-controls-bar') as HTMLElement;
@@ -103,7 +103,7 @@ export async function createEditor() {
     state.emit('timeline:change');
   }
 
-  setupToolbar(topbar, state, handleExport, handleLoadDemo);
+  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo);
   setupLeftPanel(leftPanel, state);
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);

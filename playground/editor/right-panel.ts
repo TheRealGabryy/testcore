@@ -50,12 +50,12 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
   el.innerHTML = `
     <div class="panel-tabs">
       <button class="panel-tab active" data-tab="props">Properties</button>
-      <button class="panel-tab" data-tab="fx">Info</button>
+      <button class="panel-tab" data-tab="info">Info</button>
     </div>
     <div class="tab-content" id="tab-props">
       <div id="props-content" style="display:flex;flex-direction:column;height:100%;overflow:hidden;"></div>
     </div>
-    <div class="tab-content hidden" id="tab-fx">
+    <div class="tab-content hidden" id="tab-info">
       <div id="info-content" style="padding:12px;"></div>
     </div>
   `;
@@ -76,10 +76,20 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
   const infoContent = el.querySelector('#info-content') as HTMLDivElement;
 
   function renderEmpty() {
-    propsContent.innerHTML = `<div class="props-no-selection">
-      ${svgIcon('<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>')}
-      <p>Select a clip to<br/>view its properties</p>
-    </div>`;
+    propsContent.innerHTML = `
+      <div class="props-empty-state">
+        <div class="props-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <line x1="7" y1="8" x2="17" y2="8"/>
+            <line x1="7" y1="12" x2="14" y2="12"/>
+            <line x1="7" y1="16" x2="11" y2="16"/>
+          </svg>
+        </div>
+        <p class="props-empty-title">It's empty here</p>
+        <p class="props-empty-sub">Click an element on the timeline to edit its properties</p>
+      </div>
+    `;
   }
 
   function renderClipProps() {

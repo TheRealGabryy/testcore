@@ -23,131 +23,87 @@ function getMediaType(file: File): 'video' | 'audio' | 'image' | null {
   return null;
 }
 
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function getMediaDuration(item: MediaItem): string {
+  const source = item.source as unknown as Record<string, unknown>;
+  if (typeof source['duration'] === 'number') {
+    return formatDuration(source['duration'] as number);
+  }
+  return '';
+}
+
 export function setupLeftPanel(el: HTMLElement, state: EditorState) {
   el.innerHTML = `
-    <div class="panel-tabs">
-      <button class="panel-tab active" data-tab="layers">Layers</button>
-      <button class="panel-tab" data-tab="media">Media</button>
-    </div>
-    <div class="tab-content" id="tab-layers">
-      <div class="panel-search">
-        <input class="search-input" id="layer-search" type="text" placeholder="Search layers..." />
-      </div>
-      <div class="layers-list" id="layers-list"></div>
-      <div class="layers-footer">
-        <button id="add-layer-btn">
-          ${svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>')}
-          Add Layer
+    <div class="assets-header">
+      <span class="assets-title">Assets</span>
+      <div class="assets-header-actions">
+        <button class="assets-icon-btn" id="assets-list-view" title="List view">
+          ${svgIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>')}
+        </button>
+        <button class="assets-icon-btn" id="assets-sort-btn" title="Sort">
+          ${svgIcon('<line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/>')}
+        </button>
+        <button class="assets-import-btn" id="assets-import-btn">
+          ${svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>')}
+          Import
         </button>
       </div>
     </div>
-    <div class="tab-content hidden" id="tab-media">
-      <div class="media-import-area" id="media-import-area">
-        ${svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>')}
-        <p><strong>Click to import</strong> or drag &amp; drop<br/>Video, audio, and image files</p>
-      </div>
-      <div class="media-list" id="media-list"></div>
-    </div>
+    <div class="assets-body" id="assets-body"></div>
     <input type="file" id="file-input" style="display:none" multiple accept="video/*,audio/*,image/*" />
   `;
 
-  const tabButtons = el.querySelectorAll('.panel-tab');
-  const tabContents = el.querySelectorAll('.tab-content');
-
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = (btn as HTMLElement).dataset.tab;
-      tabButtons.forEach(b => b.classList.remove('active'));
-      tabContents.forEach(c => c.classList.add('hidden'));
-      btn.classList.add('active');
-      el.querySelector(`#tab-${target}`)?.classList.remove('hidden');
-    });
-  });
-
-  const layersList = el.querySelector('#layers-list') as HTMLDivElement;
-  const mediaList = el.querySelector('#media-list') as HTMLDivElement;
-  const addLayerBtn = el.querySelector('#add-layer-btn') as HTMLButtonElement;
-  const importArea = el.querySelector('#media-import-area') as HTMLDivElement;
+  const assetsBody = el.querySelector('#assets-body') as HTMLDivElement;
+  const importBtn = el.querySelector('#assets-import-btn') as HTMLButtonElement;
   const fileInput = el.querySelector('#file-input') as HTMLInputElement;
 
-  function renderLayers() {
-    if (state.editorLayers.length === 0) {
-      layersList.innerHTML = `<div class="empty-state">
-        ${svgIcon('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/>')}
-        <p>No layers yet.<br/>Add a layer to start.</p>
-      </div>`;
-      return;
-    }
-    const search = (el.querySelector('#layer-search') as HTMLInputElement).value.toLowerCase();
-    const filtered = state.editorLayers.filter(l => !search || l.name.toLowerCase().includes(search));
-    layersList.innerHTML = filtered.map(l => `
-      <div class="layer-row${l.id === state.selectedLayerId ? ' selected' : ''}" data-layer-id="${l.id}">
-        <span class="layer-color-dot" style="background:${l.color}"></span>
-        <span class="layer-name">${l.name}</span>
-        <div class="layer-actions">
-          <button class="icon-btn vis-btn" data-layer-id="${l.id}" title="${l.visible ? 'Hide' : 'Show'}">
-            ${l.visible
-              ? svgIcon('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>')
-              : svgIcon('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>')}
-          </button>
-          <button class="icon-btn danger del-layer-btn" data-layer-id="${l.id}" title="Delete layer">
-            ${svgIcon('<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>')}
-          </button>
-        </div>
-      </div>
-    `).join('');
-
-    layersList.querySelectorAll('.layer-row').forEach(row => {
-      row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('button')) return;
-        const id = (row as HTMLElement).dataset.layerId!;
-        state.selectLayer(id);
-      });
-    });
-
-    layersList.querySelectorAll('.vis-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = (btn as HTMLElement).dataset.layerId!;
-        state.toggleLayerVisibility(id);
-      });
-    });
-
-    layersList.querySelectorAll('.del-layer-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = (btn as HTMLElement).dataset.layerId!;
-        state.removeLayer(id);
-      });
-    });
-  }
-
-  function renderMedia() {
+  function renderAssets() {
     if (state.mediaItems.length === 0) {
-      mediaList.innerHTML = `<div class="empty-state">
-        ${svgIcon('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>')}
-        <p>No media imported.<br/>Import files to get started.</p>
-      </div>`;
+      assetsBody.innerHTML = `
+        <div class="assets-drop-zone" id="assets-drop-zone">
+          ${svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>')}
+          <p><strong>Drop files here</strong></p>
+          <p>or click Import</p>
+        </div>
+      `;
+      const dropZone = assetsBody.querySelector('#assets-drop-zone') as HTMLDivElement;
+      attachDropHandlers(dropZone);
       return;
     }
-    mediaList.innerHTML = state.mediaItems.map(item => `
-      <div class="media-item" data-media-id="${item.id}">
-        <div class="media-thumb type-${item.type}">
-          ${item.type === 'image' && item.objectUrl
-            ? `<img src="${item.objectUrl}" alt="${item.name}" />`
-            : MEDIA_ICONS[item.type]}
-        </div>
-        <div class="media-info">
-          <div class="media-info-name">${item.name}</div>
-          <div class="media-info-type">${item.type}</div>
-        </div>
-        <button class="media-add-btn" data-media-id="${item.id}" title="Add to timeline">
-          ${svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>')}
-        </button>
-      </div>
-    `).join('');
 
-    mediaList.querySelectorAll('.media-add-btn').forEach(btn => {
+    assetsBody.innerHTML = `
+      <div class="assets-grid" id="assets-drop-zone">
+        ${state.mediaItems.map(item => {
+          const duration = getMediaDuration(item);
+          return `
+            <div class="asset-card" data-media-id="${item.id}" title="${item.name}">
+              <div class="asset-thumb type-${item.type}">
+                ${item.type === 'image' && item.objectUrl
+                  ? `<img src="${item.objectUrl}" alt="${item.name}" />`
+                  : MEDIA_ICONS[item.type]}
+                ${duration ? `<span class="asset-duration">${duration}</span>` : ''}
+                <div class="asset-card-overlay">
+                  <button class="asset-add-btn" data-media-id="${item.id}" title="Add to timeline">
+                    ${svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>')}
+                  </button>
+                </div>
+              </div>
+              <span class="asset-name">${item.name}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    const dropZone = assetsBody.querySelector('#assets-drop-zone') as HTMLDivElement;
+    attachDropHandlers(dropZone);
+
+    assetsBody.querySelectorAll('.asset-add-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const mediaId = (btn as HTMLElement).dataset.mediaId!;
@@ -155,6 +111,19 @@ export function setupLeftPanel(el: HTMLElement, state: EditorState) {
         if (!item) return;
         await addMediaToTimeline(item);
       });
+    });
+  }
+
+  function attachDropHandlers(zone: HTMLElement) {
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      if (e.dataTransfer?.files) handleFiles(e.dataTransfer.files);
     });
   }
 
@@ -211,36 +180,14 @@ export function setupLeftPanel(el: HTMLElement, state: EditorState) {
     }
   }
 
-  addLayerBtn.addEventListener('click', async () => {
-    await state.addLayer();
-  });
-
-  importArea.addEventListener('click', () => fileInput.click());
+  importBtn.addEventListener('click', () => fileInput.click());
 
   fileInput.addEventListener('change', () => {
     if (fileInput.files) handleFiles(fileInput.files);
     fileInput.value = '';
   });
 
-  importArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    importArea.classList.add('drag-over');
-  });
+  state.on('media:change', renderAssets);
 
-  importArea.addEventListener('dragleave', () => importArea.classList.remove('drag-over'));
-
-  importArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    importArea.classList.remove('drag-over');
-    if (e.dataTransfer?.files) handleFiles(e.dataTransfer.files);
-  });
-
-  (el.querySelector('#layer-search') as HTMLInputElement).addEventListener('input', renderLayers);
-
-  state.on('layers:change', renderLayers);
-  state.on('selection:change', renderLayers);
-  state.on('media:change', renderMedia);
-
-  renderLayers();
-  renderMedia();
+  renderAssets();
 }

@@ -13,22 +13,61 @@ function formatTime(seconds: number): string {
 
 export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, state: EditorState) {
   controlsEl.innerHTML = `
-    <button class="tl-ctrl-btn" id="tl-add-layer-btn">
-      ${svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>')}
-      Add Layer
-    </button>
-    <div class="tl-ctrl-divider"></div>
-    <div class="tl-zoom-group">
-      ${svgIcon('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>')}
+    <div class="tl-toolbar-left">
+      <button class="tl-tool-btn" title="Split clip">
+        ${svgIcon('<path d="M8 3l4 8 5-5 5 15H2L8 3z"/><line x1="4.14" y1="15.99" x2="19.86" y2="15.99"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Group">
+        ${svgIcon('<rect x="2" y="7" width="7" height="10" rx="1"/><rect x="9" y="7" width="7" height="10" rx="1"/><rect x="16" y="7" width="6" height="10" rx="1"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Ungroup">
+        ${svgIcon('<rect x="2" y="3" width="7" height="7" rx="1"/><rect x="15" y="3" width="7" height="7" rx="1"/><rect x="2" y="14" width="7" height="7" rx="1"/><rect x="15" y="14" width="7" height="7" rx="1"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Cut / Trim">
+        ${svgIcon('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Duplicate">
+        ${svgIcon('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Delete selected" id="tl-delete-btn">
+        ${svgIcon('<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Add marker">
+        ${svgIcon('<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>')}
+      </button>
+    </div>
+    <div class="tl-toolbar-center">
+      <div class="tl-scene-label">
+        <span>Main scene</span>
+        <button class="tl-tool-btn" title="Scene settings">
+          ${svgIcon('<path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>')}
+        </button>
+      </div>
+    </div>
+    <div class="tl-toolbar-right">
+      <button class="tl-tool-btn" title="Add layer" id="tl-add-layer-btn">
+        ${svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Snap to playhead">
+        ${svgIcon('<line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5-5-5 5"/>')}
+      </button>
+      <button class="tl-tool-btn" title="Link clips">
+        ${svgIcon('<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>')}
+      </button>
+      <div class="tl-ctrl-divider"></div>
+      <button class="tl-zoom-btn" id="tl-zoom-out" title="Zoom out">
+        ${svgIcon('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>')}
+      </button>
       <input class="zoom-slider" id="zoom-slider" type="range" min="20" max="600" value="80" />
-      ${svgIcon('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>')}
-      <span class="zoom-label" id="zoom-label">80 px/s</span>
+      <button class="tl-zoom-btn" id="tl-zoom-in" title="Zoom in">
+        ${svgIcon('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>')}
+      </button>
     </div>
   `;
 
   areaEl.innerHTML = `
     <div id="tl-headers">
-      <div class="tl-corner"><span class="tl-corner-label">Tracks</span></div>
+      <div class="tl-corner"></div>
       <div id="tl-header-rows"></div>
     </div>
     <div id="tl-scroll">
@@ -41,7 +80,8 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   `;
 
   const zoomSlider = controlsEl.querySelector('#zoom-slider') as HTMLInputElement;
-  const zoomLabel = controlsEl.querySelector('#zoom-label') as HTMLSpanElement;
+  const zoomOutBtn = controlsEl.querySelector('#tl-zoom-out') as HTMLButtonElement;
+  const zoomInBtn = controlsEl.querySelector('#tl-zoom-in') as HTMLButtonElement;
   const addLayerBtn = controlsEl.querySelector('#tl-add-layer-btn') as HTMLButtonElement;
 
   const tlHeaders = areaEl.querySelector('#tl-headers') as HTMLDivElement;
@@ -97,12 +137,16 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   function renderHeaders() {
     tlHeaderRows.innerHTML = state.editorLayers.map(l => `
       <div class="tl-header-row${l.id === state.selectedLayerId ? ' selected' : ''}" data-layer-id="${l.id}">
-        <div class="tl-header-color" style="background:${l.color}"></div>
-        <span class="tl-header-name">${l.name}</span>
-        <button class="tl-header-vis${!l.visible ? ' layer-hidden' : ''}" data-layer-id="${l.id}">
+        <button class="tl-track-icon-btn" title="Mute" data-layer-id="${l.id}">
+          ${svgIcon('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>')}
+        </button>
+        <button class="tl-track-icon-btn tl-header-vis${!l.visible ? ' layer-hidden' : ''}" data-layer-id="${l.id}" title="${l.visible ? 'Hide' : 'Show'}">
           ${l.visible
             ? svgIcon('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>')
             : svgIcon('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><line x1="1" y1="1" x2="23" y2="23"/>')}
+        </button>
+        <button class="tl-track-icon-btn" title="Track type">
+          ${svgIcon('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2l4 5-4 5V2z"/>')}
         </button>
       </div>
     `).join('');
@@ -215,7 +259,18 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   zoomSlider.addEventListener('input', () => {
     state.setZoom(parseInt(zoomSlider.value));
-    zoomLabel.textContent = `${state.zoom} px/s`;
+  });
+
+  zoomOutBtn.addEventListener('click', () => {
+    const newZoom = Math.max(20, state.zoom - 20);
+    state.setZoom(newZoom);
+    zoomSlider.value = String(newZoom);
+  });
+
+  zoomInBtn.addEventListener('click', () => {
+    const newZoom = Math.min(600, state.zoom + 20);
+    state.setZoom(newZoom);
+    zoomSlider.value = String(newZoom);
   });
 
   addLayerBtn.addEventListener('click', async () => {
@@ -229,7 +284,6 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   state.on('selection:change', () => { renderHeaders(); renderTracks(); });
   state.on('zoom:change', () => {
     zoomSlider.value = String(state.zoom);
-    zoomLabel.textContent = `${state.zoom} px/s`;
     fullRender();
   });
 

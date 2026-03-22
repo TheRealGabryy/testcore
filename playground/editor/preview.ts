@@ -11,6 +11,8 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
   state.composition.mount(player);
 
   playbackEl.innerHTML = `
+    <span id="time-display">00:00 / 00:00</span>
+    <div class="playback-spacer"></div>
     <div class="playback-btns">
       <button class="playback-btn" id="pb-back" title="Go to start">
         ${svgIcon('<polygon points="19 20 9 12 19 4"/><line x1="5" y1="4" x2="5" y2="20"/>')}
@@ -22,9 +24,13 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
         ${svgIcon('<polygon points="5 4 15 12 5 20"/><line x1="19" y1="4" x2="19" y2="20"/>')}
       </button>
     </div>
-    <span id="time-display">00:00 / 00:00</span>
     <div class="playback-spacer"></div>
-    <button class="fps-badge" id="fps-btn">30 fps</button>
+    <div class="playback-right">
+      <button class="playback-btn fps-badge" id="fps-btn" title="Change FPS">30 fps</button>
+      <button class="playback-btn" id="pb-fullscreen" title="Fullscreen">
+        ${svgIcon('<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>')}
+      </button>
+    </div>
   `;
 
   const pbPlay = playbackEl.querySelector('#pb-play') as HTMLButtonElement;
