@@ -85,6 +85,22 @@ export class EditorState {
     this.emit('timeline:change');
   }
 
+  async deleteSelectedClip(): Promise<void> {
+    if (!this.selectedClipId) return;
+    for (const editorLayer of this.editorLayers) {
+      const idx = editorLayer.clips.findIndex(c => c.id === this.selectedClipId);
+      if (idx < 0) continue;
+      const editorClip = editorLayer.clips[idx];
+      try { await (editorLayer.layer as any).remove(editorClip.clip); } catch { /* ignore */ }
+      editorLayer.clips.splice(idx, 1);
+      this.selectedClipId = null;
+      this.emit('selection:change', null);
+      this.emit('layers:change');
+      this.emit('timeline:change');
+      return;
+    }
+  }
+
   removeLayer(layerId: string) {
     const idx = this.editorLayers.findIndex(l => l.id === layerId);
     if (idx < 0) return;

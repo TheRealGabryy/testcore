@@ -507,7 +507,8 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   function updatePlayhead() {
     const x = state.composition.currentTime * state.zoom;
     tlPlayhead.style.left = `${x}px`;
-    tlPlayhead.style.height = `${22 + totalTracksHeight(state.editorLayers)}px`;
+    const contentH = 22 + totalTracksHeight(state.editorLayers);
+    tlPlayhead.style.height = `${Math.max(contentH, tlScroll.clientHeight)}px`;
   }
 
   function fullRender() {
@@ -582,9 +583,19 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   tlHeaders.style.flexShrink = '0';
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    const tag = (document.activeElement as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable) return;
+    if (!state.selectedClipId) return;
+    e.preventDefault();
+    state.deleteSelectedClip();
+  });
+
   const scrollResizeObserver = new ResizeObserver(() => {
     drawRuler();
     renderTracks();
+    updatePlayhead();
   });
   scrollResizeObserver.observe(tlScroll);
 
