@@ -432,11 +432,15 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
         const thumbStrip = hasThumb
           ? `<div class="tl-thumb-strip" data-clip-id-thumb="${ec.id}"></div>`
           : '';
+        const speed = ec.speed ?? 1;
+        const speedBadge = Math.abs(speed - 1) > 0.001
+          ? `<span class="tl-clip-speed">${speed % 1 === 0 ? speed : Math.round(speed * 100) / 100}x</span>`
+          : '';
         return `<div class="tl-clip clip-type-${t}${ec.id === state.selectedClipId ? ' selected' : ''}"
           style="left:${left}px;width:${w}px;opacity:${l.visible ? 1 : 0.3}"
           data-clip-id="${ec.id}" data-layer-id="${l.id}">
           ${thumbStrip}
-          <div class="tl-clip-footer"><span class="tl-clip-label">${ec.name}</span></div>
+          <div class="tl-clip-footer">${speedBadge}<span class="tl-clip-label">${ec.name}</span></div>
         </div>`;
       }).join('');
       return `<div class="tl-track tl-track--${lt}" data-layer-id="${l.id}" style="height:${h}px">${clips}</div>`;

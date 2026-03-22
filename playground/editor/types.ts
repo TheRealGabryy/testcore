@@ -5,6 +5,8 @@ export interface EditorClip {
   name: string;
   clip: core.Clip;
   color: string;
+  speed?: number;
+  originalDuration?: number;
 }
 
 export interface EditorLayer {

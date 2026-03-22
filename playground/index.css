@@ -1588,3 +1588,18 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   border: 1px solid #a3e635;
   box-shadow: 0 0 0 1px rgba(163, 230, 53, 0.4);
 }
+
+.tl-clip-speed {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #f0f0f0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-right: 3px;
+  line-height: 14px;
+}

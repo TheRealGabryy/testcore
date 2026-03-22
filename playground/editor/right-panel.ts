@@ -1,5 +1,6 @@
 import * as core from '@diffusionstudio/core';
 import type { EditorState } from './state';
+import type { EditorClip } from './types';
 
 function svgIcon(path: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
@@ -60,7 +61,7 @@ function propRow(...fields: Array<{ label: string; value: string; prop?: string;
   return `<div class="${cls}">${fields.map(f => propField(f.label, f.value, f.prop, f.type, f.extra)).join('')}</div>`;
 }
 
-function updateClipProp(clip: core.Clip, prop: string, value: string, composition: core.Composition) {
+function updateClipProp(clip: core.Clip, prop: string, value: string, composition: core.Composition, editorClip?: EditorClip) {
   const raw = clip as unknown as Record<string, unknown>;
   const num = parseFloat(value);
   const compW = (composition as unknown as Record<string, unknown>)['width'] as number ?? 1920;
@@ -71,8 +72,26 @@ function updateClipProp(clip: core.Clip, prop: string, value: string, compositio
       if (!isNaN(num) && num >= 0) (clip as unknown as Record<string, unknown>)['delay'] = num;
       break;
     case 'duration':
-      if (!isNaN(num) && num > 0) (clip as unknown as Record<string, unknown>)['duration'] = num;
+      if (!isNaN(num) && num > 0) {
+        (clip as unknown as Record<string, unknown>)['duration'] = num;
+        if (editorClip) {
+          editorClip.originalDuration = num;
+          editorClip.speed = 1;
+        }
+      }
       break;
+    case 'speed': {
+      const speed = Math.max(0.1, Math.min(16, num));
+      if (!isNaN(speed) && editorClip) {
+        if (editorClip.originalDuration === undefined) {
+          const currentSpeed = editorClip.speed ?? 1;
+          editorClip.originalDuration = clip.duration * currentSpeed;
+        }
+        editorClip.speed = speed;
+        (clip as unknown as Record<string, unknown>)['duration'] = editorClip.originalDuration / speed;
+      }
+      break;
+    }
     case 'x':
     case 'y':
       if (!isNaN(num)) raw[prop] = num;
@@ -171,17 +190,19 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     `;
   }
 
-  function bindPropInputs(clip: core.Clip) {
+  function bindPropInputs(clip: core.Clip, editorClip?: EditorClip) {
     propsContent.querySelectorAll<HTMLInputElement>('[data-prop]').forEach(input => {
       const prop = input.dataset.prop!;
 
       const commitAndRerender = () => {
-        updateClipProp(clip, prop, input.value, state.composition);
+        updateClipProp(clip, prop, input.value, state.composition, editorClip);
         state.emit('props:change');
+        if (prop === 'speed' || prop === 'duration') state.emit('timeline:change');
       };
 
       const commitLive = () => {
-        updateClipProp(clip, prop, input.value, state.composition);
+        updateClipProp(clip, prop, input.value, state.composition, editorClip);
+        if (prop === 'speed') state.emit('timeline:change');
       };
 
       if (input.type === 'range') {
@@ -214,11 +235,21 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
 
     const delayVal = resolveEditValue(clip.delay);
     const durVal = resolveEditValue(clip.duration);
+    const speed = editorClip.speed ?? 1;
+    const speedVal = String(Math.round(speed * 1000) / 1000);
+    const origDur = editorClip.originalDuration;
+    const origDurNote = (Math.abs(speed - 1) > 0.001 && origDur != null)
+      ? `<div class="prop-row single"><div class="prop-field"><span class="prop-label" style="grid-column:span 2;color:var(--text-muted);font-size:10px;font-style:italic;">Base: ${origDur.toFixed(2)}s &middot; ${speed >= 1 ? '+' : ''}${Math.round((speed - 1) * 100)}% speed</span></div></div>`
+      : '';
     sections.push(propSection('Timing',
       propRow(
         { label: 'Delay (s)', value: delayVal, prop: 'delay', type: 'number', extra: 'min="0" step="0.1"' },
         { label: 'Duration (s)', value: durVal, prop: 'duration', type: 'number', extra: 'min="0.1" step="0.1"' }
-      )
+      ) +
+      propRow(
+        { label: 'Speed', value: speedVal, prop: 'speed', type: 'number', extra: 'min="0.1" max="16" step="0.05"' }
+      ) +
+      origDurNote
     ));
 
     if (VISUAL_TYPES.has(typeStr)) {
@@ -317,7 +348,7 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
 
     syncOpacityControls();
     syncVolumeControls();
-    bindPropInputs(clip);
+    bindPropInputs(clip, editorClip);
     bindAnchorPresets(clip);
   }
 
