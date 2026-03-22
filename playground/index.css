@@ -1515,3 +1515,39 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   border-right: 4px solid transparent;
   border-top: 6px solid #e03a3a;
 }
+
+.anchor-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 6px 8px 8px;
+}
+
+.anchor-preset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-active);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.anchor-preset-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.anchor-preset-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.anchor-preset-btn--center {
+  border-color: var(--text-muted);
+}

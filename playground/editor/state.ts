@@ -2,6 +2,8 @@ import * as core from '@diffusionstudio/core';
 import type { EditorClip, EditorLayer, MediaItem } from './types';
 import type { ColorGrading } from './color-grading';
 
+const VISUAL_CLIP_TYPES = new Set(['VIDEO', 'IMAGE', 'TEXT', 'RECT', 'ELLIPSE', 'POLYGON', 'CAPTION']);
+
 const CLIP_COLORS: Record<string, string> = {
   VIDEO: '#3b7dd8',
   AUDIO: '#22c55e',
@@ -74,6 +76,11 @@ export class EditorState {
     const editorLayer = this.editorLayers.find(l => l.id === layerId);
     if (!editorLayer || editorLayer.locked) return;
     await editorLayer.layer.add(clip);
+    if (VISUAL_CLIP_TYPES.has(clip.type)) {
+      const raw = clip as unknown as Record<string, unknown>;
+      if (typeof raw['anchorX'] !== 'number' || raw['anchorX'] === 0) raw['anchorX'] = 0.5;
+      if (typeof raw['anchorY'] !== 'number' || raw['anchorY'] === 0) raw['anchorY'] = 0.5;
+    }
     const editorClip: EditorClip = {
       id: clip.id,
       name: name ?? clip.type,

@@ -21,6 +21,8 @@ const BASE_VISUAL: PropDef[] = [
   { key: 'rotation', label: 'Rotation',    unit: '°',  decimals: 1, group: 'Transform' },
   { key: 'scaleX',   label: 'Scale X',     unit: '',   decimals: 3, group: 'Transform' },
   { key: 'scaleY',   label: 'Scale Y',     unit: '',   decimals: 3, group: 'Transform' },
+  { key: 'anchorX',  label: 'Anchor X',    unit: '',   decimals: 3, group: 'Transform' },
+  { key: 'anchorY',  label: 'Anchor Y',    unit: '',   decimals: 3, group: 'Transform' },
 ];
 
 const ANIMATABLE: Record<string, PropDef[]> = {

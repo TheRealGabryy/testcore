@@ -13,6 +13,15 @@ function escapeAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function resolveClipDimension(v: unknown, compDim: number): number {
+  if (typeof v === 'number' && v > 0) return v;
+  if (v && typeof v === 'object') {
+    const r = v as Record<string, unknown>;
+    if (typeof r['value'] === 'number') return r['value'] / 100 * compDim;
+  }
+  return compDim;
+}
+
 function resolveEditValue(v: unknown, dimension?: number): string {
   if (v === undefined || v === null) return '';
   if (typeof v === 'number' && Number.isFinite(v)) return String(Math.round(v * 10) / 10);
@@ -54,6 +63,8 @@ function propRow(...fields: Array<{ label: string; value: string; prop?: string;
 function updateClipProp(clip: core.Clip, prop: string, value: string, composition: core.Composition) {
   const raw = clip as unknown as Record<string, unknown>;
   const num = parseFloat(value);
+  const compW = (composition as unknown as Record<string, unknown>)['width'] as number ?? 1920;
+  const compH = (composition as unknown as Record<string, unknown>)['height'] as number ?? 1080;
 
   switch (prop) {
     case 'delay':
@@ -88,6 +99,20 @@ function updateClipProp(clip: core.Clip, prop: string, value: string, compositio
     case 'volumePct':
       if (!isNaN(num)) raw['volume'] = Math.max(0, Math.min(2, num / 100));
       break;
+    case 'anchorXPx': {
+      if (!isNaN(num)) {
+        const w = resolveClipDimension(raw['width'], compW);
+        raw['anchorX'] = w > 0 ? Math.max(0, num / w) : 0.5;
+      }
+      break;
+    }
+    case 'anchorYPx': {
+      if (!isNaN(num)) {
+        const h = resolveClipDimension(raw['height'], compH);
+        raw['anchorY'] = h > 0 ? Math.max(0, num / h) : 0.5;
+      }
+      break;
+    }
   }
 
   composition.seek(composition.currentTime);
@@ -205,6 +230,13 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
       const opNum = typeof raw['opacity'] === 'number' ? raw['opacity'] : 1;
       const opPct = Math.round(opNum * 100);
 
+      const resolvedW = resolveClipDimension(raw['width'], compW);
+      const resolvedH = resolveClipDimension(raw['height'], compH);
+      const anchorXNorm = typeof raw['anchorX'] === 'number' ? raw['anchorX'] : 0.5;
+      const anchorYNorm = typeof raw['anchorY'] === 'number' ? raw['anchorY'] : 0.5;
+      const anchorXPx = String(Math.round(anchorXNorm * resolvedW * 10) / 10);
+      const anchorYPx = String(Math.round(anchorYNorm * resolvedH * 10) / 10);
+
       sections.push(propSection('Transform',
         propRow(
           { label: 'X', value: xVal, prop: 'x', type: 'number', extra: 'step="1"' },
@@ -221,6 +253,21 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
             <input class="prop-slider" data-prop="opacityPct" type="range" min="0" max="100" step="1" value="${opPct}" />
             <input class="prop-input editable prop-opacity-num" data-prop="opacityPct" type="number" min="0" max="100" step="1" value="${opPct}" style="width:48px;flex-shrink:0;" />
           </div>
+        </div>` +
+        propRow(
+          { label: 'Anchor X', value: anchorXPx, prop: 'anchorXPx', type: 'number', extra: 'step="1"' },
+          { label: 'Anchor Y', value: anchorYPx, prop: 'anchorYPx', type: 'number', extra: 'step="1"' }
+        ) +
+        `<div class="anchor-presets">
+          <button class="anchor-preset-btn" data-ax="0"   data-ay="0"   title="Top-left"><svg viewBox="0 0 10 10"><circle cx="2" cy="2" r="1.5" fill="currentColor"/><rect x="1" y="4" width="8" height="1" opacity=".3" rx="0.5"/><rect x="1" y="6" width="5" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="0.5" data-ay="0"   title="Top-center"><svg viewBox="0 0 10 10"><circle cx="5" cy="2" r="1.5" fill="currentColor"/><rect x="1" y="4" width="8" height="1" opacity=".3" rx="0.5"/><rect x="2" y="6" width="6" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="1"   data-ay="0"   title="Top-right"><svg viewBox="0 0 10 10"><circle cx="8" cy="2" r="1.5" fill="currentColor"/><rect x="1" y="4" width="8" height="1" opacity=".3" rx="0.5"/><rect x="4" y="6" width="5" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="0"   data-ay="0.5" title="Center-left"><svg viewBox="0 0 10 10"><circle cx="2" cy="5" r="1.5" fill="currentColor"/><rect x="1" y="1" width="8" height="1" opacity=".3" rx="0.5"/><rect x="1" y="8" width="5" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn anchor-preset-btn--center" data-ax="0.5" data-ay="0.5" title="Center"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="1.5" fill="currentColor"/><rect x="1" y="1" width="8" height="1" opacity=".3" rx="0.5"/><rect x="2" y="8" width="6" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="1"   data-ay="0.5" title="Center-right"><svg viewBox="0 0 10 10"><circle cx="8" cy="5" r="1.5" fill="currentColor"/><rect x="1" y="1" width="8" height="1" opacity=".3" rx="0.5"/><rect x="4" y="8" width="5" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="0"   data-ay="1"   title="Bottom-left"><svg viewBox="0 0 10 10"><circle cx="2" cy="8" r="1.5" fill="currentColor"/><rect x="1" y="1" width="8" height="1" opacity=".3" rx="0.5"/><rect x="1" y="3" width="5" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="0.5" data-ay="1"   title="Bottom-center"><svg viewBox="0 0 10 10"><circle cx="5" cy="8" r="1.5" fill="currentColor"/><rect x="1" y="1" width="8" height="1" opacity=".3" rx="0.5"/><rect x="2" y="3" width="6" height="1" opacity=".3" rx="0.5"/></svg></button>
+          <button class="anchor-preset-btn" data-ax="1"   data-ay="1"   title="Bottom-right"><svg viewBox="0 0 10 10"><circle cx="8" cy="8" r="1.5" fill="currentColor"/><rect x="1" y="1" width="8" height="1" opacity=".3" rx="0.5"/><rect x="4" y="3" width="5" height="1" opacity=".3" rx="0.5"/></svg></button>
         </div>`
       ));
     }
@@ -271,6 +318,21 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     syncOpacityControls();
     syncVolumeControls();
     bindPropInputs(clip);
+    bindAnchorPresets(clip);
+  }
+
+  function bindAnchorPresets(clip: core.Clip) {
+    propsContent.querySelectorAll<HTMLButtonElement>('.anchor-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const raw = clip as unknown as Record<string, unknown>;
+        const ax = parseFloat(btn.dataset.ax ?? '0.5');
+        const ay = parseFloat(btn.dataset.ay ?? '0.5');
+        raw['anchorX'] = ax;
+        raw['anchorY'] = ay;
+        state.composition.seek(state.composition.currentTime);
+        state.emit('props:change');
+      });
+    });
   }
 
   function syncOpacityControls() {
