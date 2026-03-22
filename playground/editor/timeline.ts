@@ -197,9 +197,9 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   function drawRuler() {
     const width = getContentWidth();
     tlRulerCanvas.width = width * devicePixelRatio;
-    tlRulerCanvas.height = 28 * devicePixelRatio;
+    tlRulerCanvas.height = 22 * devicePixelRatio;
     tlRulerCanvas.style.width = `${width}px`;
-    tlRulerCanvas.style.height = '28px';
+    tlRulerCanvas.style.height = '22px';
     const ctx = tlRulerCanvas.getContext('2d')!;
     ctx.scale(devicePixelRatio, devicePixelRatio);
 
@@ -352,7 +352,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   function updatePlayhead() {
     const x = state.composition.currentTime * state.zoom;
     tlPlayhead.style.left = `${x}px`;
-    tlPlayhead.style.height = `${28 + state.editorLayers.length * 40}px`;
+    tlPlayhead.style.height = `${22 + state.editorLayers.length * 40}px`;
   }
 
   function fullRender() {

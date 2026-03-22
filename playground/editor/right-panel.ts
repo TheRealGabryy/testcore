@@ -5,29 +5,6 @@ function svgIcon(path: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  VIDEO: '#3b7dd8',
-  AUDIO: '#22c55e',
-  IMAGE: '#e59d2a',
-  TEXT: '#06b6d4',
-  CAPTION: '#f97316',
-  RECT: '#e05c8e',
-  ELLIPSE: '#e05c8e',
-  POLYGON: '#e05c8e',
-  BASE: '#64748b',
-};
-
-const TYPE_ICONS: Record<string, string> = {
-  VIDEO: svgIcon('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2l4 5-4 5"/>'),
-  AUDIO: svgIcon('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
-  IMAGE: svgIcon('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>'),
-  TEXT: svgIcon('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
-  CAPTION: svgIcon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
-  RECT: svgIcon('<rect x="3" y="3" width="18" height="18" rx="2"/>'),
-  ELLIPSE: svgIcon('<circle cx="12" cy="12" r="9"/>'),
-  POLYGON: svgIcon('<polygon points="12 2 22 20 2 20"/>'),
-  BASE: svgIcon('<rect x="3" y="3" width="18" height="18"/>'),
-};
 
 const VISUAL_TYPES = new Set(['VIDEO', 'IMAGE', 'TEXT', 'RECT', 'ELLIPSE', 'POLYGON', 'CAPTION']);
 const AUDIO_TYPES = new Set(['VIDEO', 'AUDIO']);
@@ -205,8 +182,6 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     const clip = editorClip.clip;
     const raw = clip as unknown as Record<string, unknown>;
     const typeStr = String(clip.type);
-    const color = TYPE_COLORS[typeStr] ?? TYPE_COLORS['BASE'];
-    const icon = TYPE_ICONS[typeStr] ?? TYPE_ICONS['BASE'];
     const compW = state.composition.width;
     const compH = state.composition.height;
 
@@ -279,11 +254,6 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     }
 
     propsContent.innerHTML = `
-      <div class="props-clip-header">
-        <div class="props-clip-badge" style="background:${color}">${icon}</div>
-        <span class="props-clip-name">${editorClip.name}</span>
-        <span class="props-clip-type">${typeStr}</span>
-      </div>
       <div class="props-scroll">
         ${sections.join('')}
       </div>
