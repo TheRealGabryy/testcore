@@ -118,15 +118,24 @@ function updateClipProp(clip: core.Clip, prop: string, value: string, compositio
 
 export function setupRightPanel(el: HTMLElement, state: EditorState) {
   el.innerHTML = `
-    <div class="panel-tabs">
-      <button class="panel-tab active" data-tab="props">Properties</button>
-      <button class="panel-tab" data-tab="info">Info</button>
+    <div class="panel-header-row">
+      <span class="panel-header-title">Properties</span>
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="props">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Design
+        </button>
+        <button class="panel-tab" data-tab="fx">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          FX
+        </button>
+      </div>
     </div>
     <div id="tab-props" class="tab-content">
       <div id="props-content"></div>
     </div>
-    <div id="tab-info" class="tab-content hidden">
-      <div id="info-content"></div>
+    <div id="tab-fx" class="tab-content hidden">
+      <div id="fx-content"></div>
     </div>
   `;
 
@@ -141,7 +150,7 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
   });
 
   const propsContent = el.querySelector('#props-content') as HTMLDivElement;
-  const infoContent = el.querySelector('#info-content') as HTMLDivElement;
+  const fxContent = el.querySelector('#fx-content') as HTMLDivElement;
 
   function renderEmpty() {
     propsContent.innerHTML = `
@@ -310,26 +319,24 @@ export function setupRightPanel(el: HTMLElement, state: EditorState) {
     numInput.addEventListener('input', () => { slider.value = numInput.value; });
   }
 
-  function renderInfo() {
-    const duration = state.composition.duration;
-    const layers = state.editorLayers.length;
-    const clips = state.editorLayers.reduce((acc, l) => acc + l.clips.length, 0);
-    infoContent.innerHTML = `
-      <div class="info-rows">
-        <div class="info-row"><span>Duration</span><span>${duration.toFixed(2)}s</span></div>
-        <div class="info-row"><span>Layers</span><span>${layers}</span></div>
-        <div class="info-row"><span>Clips</span><span>${clips}</span></div>
-        <div class="info-row"><span>Resolution</span><span>${state.composition.width}×${state.composition.height}</span></div>
-        <div class="info-row"><span>FPS</span><span>${state.fps}</span></div>
+  function renderFx() {
+    fxContent.innerHTML = `
+      <div class="props-empty-state">
+        <div class="props-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/>
+          </svg>
+        </div>
+        <p class="props-empty-title">No effects</p>
+        <p class="props-empty-sub">Effects and filters will appear here</p>
       </div>
     `;
   }
 
   state.on('selection:change', renderClipProps);
   state.on('props:change', renderClipProps);
-  state.on('layers:change', () => { renderClipProps(); renderInfo(); });
-  state.on('timeline:change', renderInfo);
+  state.on('layers:change', renderClipProps);
 
   renderEmpty();
-  renderInfo();
+  renderFx();
 }
