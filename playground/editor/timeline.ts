@@ -1,4 +1,129 @@
 import type { EditorState } from './state';
+import type { EditorLayer } from './types';
+
+const TRACK_H_NORMAL = 44;
+const TRACK_H_AUDIO  = 30;
+const TRACK_H_TEXT   = 22;
+
+const AUDIO_TYPES  = new Set(['AUDIO']);
+const TEXT_TYPES   = new Set(['TEXT', 'CAPTION']);
+
+function layerType(layer: EditorLayer): 'visual' | 'audio' | 'text' {
+  for (const ec of layer.clips) {
+    const t = String(ec.clip.type);
+    if (AUDIO_TYPES.has(t)) return 'audio';
+    if (TEXT_TYPES.has(t))  return 'text';
+  }
+  return 'visual';
+}
+
+function trackHeight(layer: EditorLayer): number {
+  const t = layerType(layer);
+  if (t === 'audio') return TRACK_H_AUDIO;
+  if (t === 'text')  return TRACK_H_TEXT;
+  return TRACK_H_NORMAL;
+}
+
+function totalTracksHeight(layers: EditorLayer[]): number {
+  return layers.reduce((sum, l) => sum + trackHeight(l), 0);
+}
+
+const thumbCache = new Map<string, HTMLCanvasElement[]>();
+
+async function generateThumbnails(
+  clipEl: HTMLElement,
+  clip: Record<string, unknown>,
+  clipId: string
+) {
+  const type = String((clip as any).type);
+  if (type !== 'VIDEO' && type !== 'IMAGE') return;
+
+  const strip = clipEl.querySelector('.tl-thumb-strip') as HTMLElement | null;
+  if (!strip) return;
+
+  const trackH = clipEl.offsetHeight;
+  const thumbH = Math.max(8, Math.floor(trackH * 0.67));
+  const aspectW = Math.round(thumbH * (16 / 9));
+  const stripW  = Math.max(1, clipEl.offsetWidth);
+  const count   = Math.max(1, Math.ceil(stripW / aspectW));
+
+  const cacheKey = `${clipId}:${thumbH}:${count}`;
+  if (thumbCache.has(cacheKey)) {
+    strip.innerHTML = '';
+    for (const c of thumbCache.get(cacheKey)!) {
+      const clone = c.cloneNode(true) as HTMLCanvasElement;
+      clone.style.cssText = `width:${aspectW}px;height:${thumbH}px;flex-shrink:0;display:block;`;
+      strip.appendChild(clone);
+    }
+    return;
+  }
+
+  const source = (clip as any).source;
+  const src: string =
+    source?.src     ??
+    source?.url     ??
+    source?.objectURL ??
+    source?.objectUrl ??
+    (clip as any).src ??
+    '';
+
+  if (!src) return;
+
+  const canvases: HTMLCanvasElement[] = [];
+  strip.innerHTML = '';
+
+  try {
+    if (type === 'IMAGE') {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = src;
+      await new Promise<void>((res, rej) => {
+        img.onload = () => res();
+        img.onerror = () => rej(new Error('img load fail'));
+      });
+      for (let i = 0; i < count; i++) {
+        const cv = document.createElement('canvas');
+        cv.width = aspectW * devicePixelRatio;
+        cv.height = thumbH * devicePixelRatio;
+        cv.style.cssText = `width:${aspectW}px;height:${thumbH}px;flex-shrink:0;display:block;`;
+        const ctx = cv.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, cv.width, cv.height);
+        canvases.push(cv);
+        strip.appendChild(cv);
+      }
+    } else {
+      const vid = document.createElement('video');
+      vid.muted = true;
+      vid.playsInline = true;
+      vid.preload = 'metadata';
+      vid.src = src;
+      await new Promise<void>((res) => {
+        vid.addEventListener('loadedmetadata', () => res(), { once: true });
+        vid.addEventListener('error', () => res(), { once: true });
+      });
+      const dur = (clip as any).duration as number ?? vid.duration ?? 1;
+      for (let i = 0; i < count; i++) {
+        const t = i === 0 ? 0.05 : (i / count) * dur;
+        vid.currentTime = t;
+        await new Promise<void>((res) => {
+          vid.addEventListener('seeked', () => res(), { once: true });
+          vid.addEventListener('error',  () => res(), { once: true });
+        });
+        const cv = document.createElement('canvas');
+        cv.width = aspectW * devicePixelRatio;
+        cv.height = thumbH * devicePixelRatio;
+        cv.style.cssText = `width:${aspectW}px;height:${thumbH}px;flex-shrink:0;display:block;`;
+        const ctx = cv.getContext('2d')!;
+        ctx.drawImage(vid, 0, 0, cv.width, cv.height);
+        canvases.push(cv);
+        strip.appendChild(cv);
+      }
+    }
+    thumbCache.set(cacheKey, canvases);
+  } catch {
+    strip.innerHTML = '';
+  }
+}
 
 function svgIcon(path: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
@@ -230,8 +355,12 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   }
 
   function renderHeaders() {
-    tlHeaderRows.innerHTML = state.editorLayers.map(l => `
-      <div class="tl-header-row${l.id === state.selectedLayerId ? ' selected' : ''}" data-layer-id="${l.id}">
+    tlHeaderRows.innerHTML = state.editorLayers.map(l => {
+      const h = trackHeight(l);
+      const lt = layerType(l);
+      return `
+      <div class="tl-header-row tl-header-row--${lt}${l.id === state.selectedLayerId ? ' selected' : ''}"
+           data-layer-id="${l.id}" style="height:${h}px">
         <button class="tl-track-icon-btn" title="Mute" data-layer-id="${l.id}">
           ${svgIcon('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>')}
         </button>
@@ -244,7 +373,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
           ${svgIcon('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2l4 5-4 5V2z"/>')}
         </button>
       </div>
-    `).join('');
+    `}).join('');
 
     tlHeaderRows.querySelectorAll('.tl-header-row').forEach(row => {
       row.addEventListener('click', (e) => {
@@ -266,18 +395,26 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     tlInner.style.width = `${width}px`;
 
     tlTracks.innerHTML = state.editorLayers.map(l => {
+      const h = trackHeight(l);
+      const lt = layerType(l);
       const clips = l.clips.map(ec => {
         const s = ec.clip.delay;
         const d = ec.clip.duration;
         const left = s * state.zoom;
         const w = Math.max(d * state.zoom, 4);
-        return `<div class="tl-clip clip-type-${ec.clip.type}${ec.id === state.selectedClipId ? ' selected' : ''}"
+        const t = String(ec.clip.type);
+        const hasThumb = t === 'VIDEO' || t === 'IMAGE';
+        const thumbStrip = hasThumb
+          ? `<div class="tl-thumb-strip" data-clip-id-thumb="${ec.id}"></div>`
+          : '';
+        return `<div class="tl-clip clip-type-${t}${ec.id === state.selectedClipId ? ' selected' : ''}"
           style="left:${left}px;width:${w}px;opacity:${l.visible ? 1 : 0.3}"
           data-clip-id="${ec.id}" data-layer-id="${l.id}">
-          <span class="tl-clip-label">${ec.name}</span>
+          ${thumbStrip}
+          <div class="tl-clip-footer"><span class="tl-clip-label">${ec.name}</span></div>
         </div>`;
       }).join('');
-      return `<div class="tl-track" data-layer-id="${l.id}">${clips}</div>`;
+      return `<div class="tl-track tl-track--${lt}" data-layer-id="${l.id}" style="height:${h}px">${clips}</div>`;
     }).join('');
 
     tlTracks.querySelectorAll('.tl-clip').forEach(clip => {
@@ -347,12 +484,30 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
         state.selectClip(null);
       });
     });
+
+    requestAnimationFrame(() => {
+      tlTracks.querySelectorAll<HTMLElement>('.tl-clip').forEach(clipEl => {
+        const clipId = clipEl.dataset.clipId;
+        if (!clipId) return;
+        for (const l of state.editorLayers) {
+          const ec = l.clips.find(c => c.id === clipId);
+          if (ec) {
+            generateThumbnails(
+              clipEl,
+              ec.clip as unknown as Record<string, unknown>,
+              clipId
+            );
+            break;
+          }
+        }
+      });
+    });
   }
 
   function updatePlayhead() {
     const x = state.composition.currentTime * state.zoom;
     tlPlayhead.style.left = `${x}px`;
-    tlPlayhead.style.height = `${22 + state.editorLayers.length * 40}px`;
+    tlPlayhead.style.height = `${22 + totalTracksHeight(state.editorLayers)}px`;
   }
 
   function fullRender() {
@@ -366,7 +521,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   function syncHeaderScroll() {
     const scrollTop = tlScroll.scrollTop;
     tlHeaderRows.style.transform = `translateY(-${scrollTop}px)`;
-    tlHeaderRows.style.height = `${state.editorLayers.length * 40}px`;
+    tlHeaderRows.style.height = `${totalTracksHeight(state.editorLayers)}px`;
   }
 
   tlScroll.addEventListener('scroll', () => {
