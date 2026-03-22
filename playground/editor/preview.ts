@@ -211,6 +211,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
           handle.removeEventListener('pointermove', onMove);
           handle.removeEventListener('pointerup', onUp);
           state.emit('props:change');
+          renderOverlay();
         };
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onUp);
@@ -245,12 +246,25 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
         box.removeEventListener('pointermove', onMove);
         box.removeEventListener('pointerup', onUp);
         state.emit('props:change');
+        renderOverlay();
       };
       box.addEventListener('pointermove', onMove);
       box.addEventListener('pointerup', onUp);
     });
 
     overlay.appendChild(box);
+  }
+
+  function applySize(raw: Record<string, unknown>, w?: number, h?: number) {
+    if (w !== undefined && h !== undefined) {
+      raw['keepAspectRatio'] = false;
+      raw['width'] = w;
+      raw['height'] = h;
+    } else if (w !== undefined) {
+      raw['width'] = w;
+    } else if (h !== undefined) {
+      raw['height'] = h;
+    }
   }
 
   function handleDrag(e: PointerEvent, raw: Record<string, unknown>) {
@@ -279,18 +293,19 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
       case 'resize-se': {
         const nw = Math.max(MIN_SIZE, sw + dx);
         const nh = Math.max(MIN_SIZE, sh + dy);
-        raw['width'] = nw;
-        raw['height'] = nh;
+        applySize(raw, nw, nh);
         box.style.width = `${nw}px`;
         box.style.height = `${nh}px`;
         break;
       }
       case 'resize-sw': {
         const nw = Math.max(MIN_SIZE, sw - dx);
+        const nh = Math.max(MIN_SIZE, sh + dy);
         const nx = sx + sw * ax - nw * ax;
-        raw['width'] = nw;
+        applySize(raw, nw, nh);
         raw['x'] = nx;
         box.style.width = `${nw}px`;
+        box.style.height = `${nh}px`;
         box.style.left = `${nx - nw * ax}px`;
         break;
       }
@@ -298,8 +313,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
         const nw = Math.max(MIN_SIZE, sw + dx);
         const nh = Math.max(MIN_SIZE, sh - dy);
         const ny = sy + sh * ay - nh * ay;
-        raw['width'] = nw;
-        raw['height'] = nh;
+        applySize(raw, nw, nh);
         raw['y'] = ny;
         box.style.width = `${nw}px`;
         box.style.height = `${nh}px`;
@@ -311,8 +325,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
         const nh = Math.max(MIN_SIZE, sh - dy);
         const nx = sx + sw * ax - nw * ax;
         const ny = sy + sh * ay - nh * ay;
-        raw['width'] = nw;
-        raw['height'] = nh;
+        applySize(raw, nw, nh);
         raw['x'] = nx;
         raw['y'] = ny;
         box.style.width = `${nw}px`;
@@ -324,7 +337,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
       case 'resize-n': {
         const nh = Math.max(MIN_SIZE, sh - dy);
         const ny = sy + sh * ay - nh * ay;
-        raw['height'] = nh;
+        applySize(raw, undefined, nh);
         raw['y'] = ny;
         box.style.height = `${nh}px`;
         box.style.top = `${ny - nh * ay}px`;
@@ -332,20 +345,20 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
       }
       case 'resize-s': {
         const nh = Math.max(MIN_SIZE, sh + dy);
-        raw['height'] = nh;
+        applySize(raw, undefined, nh);
         box.style.height = `${nh}px`;
         break;
       }
       case 'resize-e': {
         const nw = Math.max(MIN_SIZE, sw + dx);
-        raw['width'] = nw;
+        applySize(raw, nw, undefined);
         box.style.width = `${nw}px`;
         break;
       }
       case 'resize-w': {
         const nw = Math.max(MIN_SIZE, sw - dx);
         const nx = sx + sw * ax - nw * ax;
-        raw['width'] = nw;
+        applySize(raw, nw, undefined);
         raw['x'] = nx;
         box.style.width = `${nw}px`;
         box.style.left = `${nx - nw * ax}px`;
@@ -353,7 +366,7 @@ export function setupPreview(playbackEl: HTMLElement, state: EditorState) {
       }
     }
 
-    state.composition.seek(state.composition.currentTime);
+    state.composition.update();
   }
 
   state.on('selection:change', renderOverlay);
