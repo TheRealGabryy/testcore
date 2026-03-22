@@ -36,7 +36,6 @@ export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDe
       ${LAYOUT_TABS.map(tab => `
         <button class="icon-sidebar-btn${tab.id === 'edit' ? ' active' : ''}" data-id="${tab.id}" title="${tab.title}">
           ${tab.icon}
-          <span class="tab-label">${tab.title}</span>
         </button>
       `).join('')}
     </div>

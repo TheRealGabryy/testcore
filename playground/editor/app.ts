@@ -125,8 +125,18 @@ export async function createEditor() {
   }
 
   const editorRoot = document.querySelector('#editor') as HTMLElement;
+  const layoutFlash = document.querySelector('#layout-flash') as HTMLElement;
+
   function handleLayoutChange(id: string) {
-    editorRoot.dataset.layout = id;
+    layoutFlash.style.opacity = '1';
+    setTimeout(() => {
+      editorRoot.dataset.layout = id;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          layoutFlash.style.opacity = '0';
+        });
+      });
+    }, 50);
   }
 
   setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange);
