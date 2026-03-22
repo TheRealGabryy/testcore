@@ -96,6 +96,11 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
   let playheadDragging = false;
 
   const EDGE_ZONE = 8;
+  const GRID = 1 / 16;
+
+  function snap(t: number): number {
+    return Math.round(t / GRID) * GRID;
+  }
 
   interface DragState {
     clipEl: HTMLElement;
@@ -125,19 +130,19 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     const raw = editorClip.clip as unknown as Record<string, unknown>;
 
     if (drag.mode === 'move') {
-      const newDelay = Math.max(0, drag.originalDelay + deltaSeconds);
+      const newDelay = snap(Math.max(0, drag.originalDelay + deltaSeconds));
       raw['delay'] = newDelay;
       drag.clipEl.style.left = `${newDelay * state.zoom}px`;
       drag.clipEl.classList.add('dragging');
     } else if (drag.mode === 'resize-right') {
-      const newDuration = Math.max(0.1, drag.originalDuration + deltaSeconds);
+      const newDuration = snap(Math.max(GRID, drag.originalDuration + deltaSeconds));
       raw['duration'] = newDuration;
       drag.clipEl.style.width = `${Math.max(newDuration * state.zoom, 4)}px`;
     } else if (drag.mode === 'resize-left') {
       const maxDelta = drag.originalDelay;
       const clampedDelta = Math.max(-maxDelta, deltaSeconds);
-      const newDelay = drag.originalDelay + clampedDelta;
-      const newDuration = Math.max(0.1, drag.originalDuration - clampedDelta);
+      const newDelay = snap(Math.max(0, drag.originalDelay + clampedDelta));
+      const newDuration = snap(Math.max(GRID, drag.originalDuration - (newDelay - drag.originalDelay)));
       raw['delay'] = newDelay;
       raw['duration'] = newDuration;
       drag.clipEl.style.left = `${newDelay * state.zoom}px`;
@@ -198,7 +203,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
 
   function computeStep(): number {
     const minPixels = 50;
-    const steps = [0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60];
+    const steps = [1 / 16, 0.25, 0.5, 1, 2, 5, 10, 30, 60];
     for (const s of steps) {
       if (s * state.zoom >= minPixels) return s;
     }
@@ -350,7 +355,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     playheadDragging = true;
     const rect = tlScroll.getBoundingClientRect();
     const x = e.clientX - rect.left + tlScroll.scrollLeft;
-    const t = Math.max(0, Math.min(x / state.zoom, state.composition.duration));
+    const t = snap(Math.max(0, Math.min(x / state.zoom, state.composition.duration)));
     state.composition.seek(t);
   });
 
@@ -361,7 +366,7 @@ export function setupTimeline(controlsEl: HTMLElement, areaEl: HTMLElement, stat
     seeking = true;
     const rect = tlScroll.getBoundingClientRect();
     const x = e.clientX - rect.left + tlScroll.scrollLeft;
-    const t = Math.max(0, Math.min(x / state.zoom, state.composition.duration));
+    const t = snap(Math.max(0, Math.min(x / state.zoom, state.composition.duration)));
     await state.composition.seek(t);
     seeking = false;
   });
