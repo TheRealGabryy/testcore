@@ -37,11 +37,11 @@ input, textarea, [contenteditable] { user-select: text; }
 /* Layout */
 #editor { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
 #main { flex: 1; display: flex; flex-direction: row; overflow: hidden; min-height: 0; }
-#content-area { flex: 1; display: grid; overflow: hidden; min-width: 0; }
+#content-area { flex: 1; display: grid; overflow: hidden; min-width: 0; min-height: 0; }
 #center { display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
 
 /* Timeline section wrapper */
-#timeline-section { display: flex; flex-direction: column; overflow: hidden; min-height: 0; border-top: 1px solid var(--border); }
+#timeline-section { display: flex; flex-direction: column; overflow: hidden; min-height: 0; min-width: 0; border-top: 1px solid var(--border); }
 
 /* New placeholder panels — hidden by default, shown per layout */
 #color-panel,
@@ -51,76 +51,84 @@ input, textarea, [contenteditable] { user-select: text; }
 #asset-folder-panel,
 #asset-meta-panel { display: none; }
 
-/* ─── LAYOUT: EDIT (default) ─────────────────────────────────────────────── */
+/* Shared grid item constraints */
+#left-panel, #center, #right-panel, #timeline-section,
+#color-panel, #keyframe-props-panel, #keyframe-timeline-section,
+#micro-scrub-section, #asset-folder-panel, #asset-meta-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ─── LAYOUT: EDIT ───────────────────────────────────────────────────────── */
 #editor[data-layout="edit"] #content-area {
   grid-template-columns: 260px 1fr 260px;
-  grid-template-rows: 1fr 220px;
+  grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "left center right"
     "tl   tl     tl";
 }
 #editor[data-layout="edit"] #left-panel       { grid-area: left; }
 #editor[data-layout="edit"] #center           { grid-area: center; }
-#editor[data-layout="edit"] #right-panel      { grid-area: right; }
-#editor[data-layout="edit"] #timeline-section { grid-area: tl; }
+#editor[data-layout="edit"] #right-panel      { grid-area: right; display: flex; }
+#editor[data-layout="edit"] #timeline-section { grid-area: tl; display: flex; }
 
 /* ─── LAYOUT: COLOR ──────────────────────────────────────────────────────── */
 #editor[data-layout="color"] #content-area {
-  grid-template-columns: 240px 1fr 300px;
-  grid-template-rows: 1fr 220px;
+  grid-template-columns: 260px 1fr 300px;
+  grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "left center color"
-    "tl   tl     color";
+    "left  center color"
+    "tl    tl     color";
 }
 #editor[data-layout="color"] #left-panel       { grid-area: left; display: flex; }
 #editor[data-layout="color"] #center           { grid-area: center; display: flex; }
 #editor[data-layout="color"] #timeline-section { grid-area: tl; display: flex; }
-#editor[data-layout="color"] #color-panel      { grid-area: color; display: flex; }
+#editor[data-layout="color"] #color-panel      { grid-area: color; display: flex; flex-direction: column; }
 #editor[data-layout="color"] #right-panel      { display: none; }
 
 /* ─── LAYOUT: ANIMATION ──────────────────────────────────────────────────── */
 #editor[data-layout="animation"] #content-area {
   grid-template-columns: 220px 1fr 260px;
-  grid-template-rows: 1fr 170px 130px;
+  grid-template-rows: 2fr 1fr 1fr;
   grid-template-areas:
     "layers center keyprops"
     "tl     tl     tl"
     "kftl   kftl   kftl";
 }
-#editor[data-layout="animation"] #left-panel              { grid-area: layers; display: flex; }
-#editor[data-layout="animation"] #center                  { grid-area: center; display: flex; }
-#editor[data-layout="animation"] #keyframe-props-panel    { grid-area: keyprops; display: flex; }
-#editor[data-layout="animation"] #timeline-section        { grid-area: tl; display: flex; }
+#editor[data-layout="animation"] #left-panel                { grid-area: layers; display: flex; }
+#editor[data-layout="animation"] #center                    { grid-area: center; display: flex; }
+#editor[data-layout="animation"] #keyframe-props-panel      { grid-area: keyprops; display: flex; flex-direction: column; }
+#editor[data-layout="animation"] #timeline-section          { grid-area: tl; display: flex; }
 #editor[data-layout="animation"] #keyframe-timeline-section { grid-area: kftl; display: flex; flex-direction: column; }
-#editor[data-layout="animation"] #right-panel             { display: none; }
+#editor[data-layout="animation"] #right-panel               { display: none; }
 
 /* ─── LAYOUT: CANVAS ─────────────────────────────────────────────────────── */
 #editor[data-layout="canvas"] #content-area {
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr 56px;
+  grid-template-rows: 4fr 1fr;
   grid-template-areas:
     "center"
     "scrub";
   position: relative;
 }
-#editor[data-layout="canvas"] #center            { grid-area: center; display: flex; }
+#editor[data-layout="canvas"] #center              { grid-area: center; display: flex; }
 #editor[data-layout="canvas"] #micro-scrub-section { grid-area: scrub; display: flex; }
-#editor[data-layout="canvas"] #timeline-section  { display: none; }
-#editor[data-layout="canvas"] #right-panel       { display: none; }
+#editor[data-layout="canvas"] #timeline-section    { display: none; }
+#editor[data-layout="canvas"] #right-panel         { display: none; }
 #editor[data-layout="canvas"] #left-panel {
   display: flex;
   position: absolute;
   left: 8px;
   top: 8px;
   width: 200px;
-  height: calc(100% - 72px);
+  height: calc(80% - 16px);
   z-index: 20;
   border-radius: 8px;
   border: 1px solid var(--border-light);
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  opacity: 0.92;
+  opacity: 0.88;
 }
-#editor[data-layout="canvas"] #left-panel:hover { opacity: 1; }
+#editor[data-layout="canvas"] #left-panel:hover { opacity: 1; transition: opacity 0.15s; }
 
 /* ─── LAYOUT: ASSETS ─────────────────────────────────────────────────────── */
 #editor[data-layout="assets"] #content-area {
@@ -128,9 +136,9 @@ input, textarea, [contenteditable] { user-select: text; }
   grid-template-rows: 1fr;
   grid-template-areas: "folder left meta";
 }
-#editor[data-layout="assets"] #asset-folder-panel { grid-area: folder; display: flex; }
+#editor[data-layout="assets"] #asset-folder-panel { grid-area: folder; display: flex; flex-direction: column; }
 #editor[data-layout="assets"] #left-panel         { grid-area: left; display: flex; }
-#editor[data-layout="assets"] #asset-meta-panel   { grid-area: meta; display: flex; }
+#editor[data-layout="assets"] #asset-meta-panel   { grid-area: meta; display: flex; flex-direction: column; }
 #editor[data-layout="assets"] #center             { display: none; }
 #editor[data-layout="assets"] #right-panel        { display: none; }
 #editor[data-layout="assets"] #timeline-section   { display: none; }
