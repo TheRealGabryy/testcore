@@ -31,7 +31,8 @@
   -webkit-font-smoothing: antialiased;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { overflow: hidden; width: 100vw; height: 100vh; }
+body { overflow: hidden; width: 100vw; height: 100vh; user-select: none; }
+input, textarea, [contenteditable] { user-select: text; }
 
 /* Layout */
 #editor { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
