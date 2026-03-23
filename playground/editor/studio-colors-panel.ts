@@ -137,9 +137,11 @@ class StudioCurvesEditor {
     ctx.fillStyle = '#111820';
     ctx.fillRect(pad, pad, innerW, innerH);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
-    for (const t of [0.25, 0.5, 0.75]) {
+    for (let step = 1; step <= 9; step++) {
+      const t = step / 10;
+      const isMid = step === 5;
+      ctx.strokeStyle = isMid ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)';
       const [gx] = this.toCanvas(t, 0);
       ctx.beginPath(); ctx.moveTo(gx, pad); ctx.lineTo(gx, pad + innerH); ctx.stroke();
       const [, gy] = this.toCanvas(0, t);
@@ -344,6 +346,7 @@ export function setupStudioColorsPanel(
   function buildPanels() {
     wheelsEl.innerHTML = '';
     wheelsCtrl = setupWheelsTab(wheelsEl, getGrading, triggerChange);
+    wheelsEl.classList.add('studio-wheels-wrap');
     buildCurvesPanel();
     activateTab(activeTab);
   }
