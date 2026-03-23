@@ -3146,3 +3146,147 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   border-color: rgba(239, 68, 68, 0.5);
 }
 
+/* ===== Animation Panel: Expand Arrows ===== */
+.kft-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  padding: 0;
+  transition: color 100ms, transform 100ms;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.kft-expand-btn:hover {
+  color: var(--text-2);
+}
+
+.kft-expand-btn--open {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.kft-label-top-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.kft-label-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.kft-label-curve-hint {
+  font-size: 9.5px;
+  color: var(--text-3);
+  margin-top: 2px;
+  padding-left: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+/* ===== Animation Panel: Easing Context Menu ===== */
+.kf-curve-menu {
+  position: fixed;
+  z-index: 9000;
+  background: #111827;
+  border: 1px solid #1e2d45;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1e2d45 transparent;
+}
+
+.kf-curve-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.kf-curve-menu::-webkit-scrollbar-thumb {
+  background: #1e2d45;
+  border-radius: 2px;
+}
+
+.kf-curve-menu-section {
+  margin-top: 4px;
+}
+
+.kf-curve-menu-section:first-child {
+  margin-top: 0;
+}
+
+.kf-curve-menu-section-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  padding: 2px 8px 4px;
+}
+
+.kf-curve-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 80ms;
+}
+
+.kf-curve-menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.kf-curve-menu-item--active {
+  background: var(--bg-active);
+}
+
+.kf-curve-menu-item--active .kf-curve-item-label {
+  color: var(--accent);
+}
+
+.kf-curve-preview {
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+}
+
+.kf-curve-item-label {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.kf-curve-item-check {
+  flex-shrink: 0;
+  width: 12px;
+  font-size: 10px;
+  color: var(--accent);
+  text-align: center;
+}
+

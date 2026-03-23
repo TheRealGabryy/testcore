@@ -1,10 +1,12 @@
 import type { EditorState } from './state';
 import { getSettings } from './settings';
+import { applyEasing, EASING_PRESETS, makeCurveSvg, toCoreEasing } from './easing';
 
 function ROW_H() { return getSettings().keyframes.rowHeight; }
 function LABEL_W() { return getSettings().keyframes.labelWidth; }
 function RULER_H() { return getSettings().keyframes.rulerHeight; }
 function DIAMOND() { return getSettings().keyframes.diamondSize; }
+const CURVE_H_MULT = 3;
 
 interface PropDef {
   key: string;
@@ -76,11 +78,12 @@ function readValue(clip: Record<string, unknown>, key: string, compW: number, co
 }
 
 interface SelectedKf { propKey: string; frameIndex: number }
+type KfFrame = { time: unknown; value: unknown; easing?: string; _customEasing?: string };
 
-function getFrames(clip: Record<string, unknown>, key: string): Array<{ time: unknown; value: unknown }> {
+function getFrames(clip: Record<string, unknown>, key: string): KfFrame[] {
   const anims = (clip['animations'] ?? []) as Array<Record<string, unknown>>;
   const anim = anims.find(a => a['key'] === key);
-  return (anim?.['frames'] ?? []) as Array<{ time: unknown; value: unknown }>;
+  return (anim?.['frames'] ?? []) as KfFrame[];
 }
 
 function addOrUpdateKf(
@@ -97,13 +100,13 @@ function addOrUpdateKf(
     anims.push(anim);
     if (!clip['animations']) clip['animations'] = anims;
   }
-  const frames = anim['frames'] as Array<{ time: number; value: number }>;
+  const frames = anim['frames'] as KfFrame[];
   const threshold = 0.5 / fps;
   const existing = frames.findIndex(f => Math.abs(timeToSecs(f.time) - relTimeSecs) < threshold);
   if (existing >= 0) {
-    frames[existing].value = value;
+    (frames[existing] as any).value = value;
   } else {
-    frames.push({ time: relTimeSecs, value });
+    frames.push({ time: relTimeSecs, value, easing: 'linear', _customEasing: 'linear' });
     frames.sort((a, b) => timeToSecs(a.time) - timeToSecs(b.time));
   }
 }
@@ -152,42 +155,147 @@ function drawRuler(ctx: CanvasRenderingContext2D, w: number, zoom: number, scrol
   }
 }
 
+function drawCurveGraph(
+  ctx: CanvasRenderingContext2D,
+  frames: KfFrame[],
+  clipDelay: number,
+  rowIndex: number,
+  graphY: number,
+  graphH: number,
+  zoom: number,
+  scrollX: number,
+  cw: number,
+  dpr: number,
+  propKey: string,
+  selKf: SelectedKf | null
+) {
+  const sett = getSettings();
+  ctx.fillStyle = rowIndex % 2 === 0 ? '#0d1523' : '#0a1118';
+  ctx.fillRect(0, graphY * dpr, cw, graphH * dpr);
+
+  const padV = 8;
+  const innerH = graphH - padV * 2;
+
+  let minVal = Infinity, maxVal = -Infinity;
+  for (const f of frames) {
+    const v = typeof f.value === 'number' ? f.value : 0;
+    minVal = Math.min(minVal, v);
+    maxVal = Math.max(maxVal, v);
+  }
+  if (!isFinite(minVal)) { minVal = 0; maxVal = 1; }
+  if (minVal === maxVal) { minVal -= 1; maxVal += 1; }
+  const valRange = maxVal - minVal;
+
+  function valToCanvasY(v: number): number {
+    const norm = (v - minVal) / valRange;
+    return (graphY + padV + (1 - norm) * innerH) * dpr;
+  }
+
+  const gridFracs = [0, 0.25, 0.5, 0.75, 1.0];
+  ctx.lineWidth = 0.5 * dpr;
+  for (const g of gridFracs) {
+    const y = valToCanvasY(minVal + g * valRange);
+    ctx.strokeStyle = g === 0 || g === 1 ? '#1e2d3d' : '#151f2a';
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(cw, y);
+    ctx.stroke();
+  }
+
+  if (frames.length >= 2) {
+    const STEPS = 60;
+    for (let seg = 0; seg < frames.length - 1; seg++) {
+      const f0 = frames[seg];
+      const f1 = frames[seg + 1];
+      const t0 = clipDelay + timeToSecs(f0.time);
+      const t1 = clipDelay + timeToSecs(f1.time);
+      const v0 = typeof f0.value === 'number' ? f0.value : 0;
+      const v1 = typeof f1.value === 'number' ? f1.value : 0;
+      const easingId = f0._customEasing ?? f0.easing ?? 'linear';
+
+      ctx.strokeStyle = sett.keyframes.keyframeLine;
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath();
+      for (let s = 0; s <= STEPS; s++) {
+        const progress = s / STEPS;
+        const easedProgress = applyEasing(progress, easingId);
+        const timeAtPoint = t0 + (t1 - t0) * progress;
+        const valueAtPoint = v0 + (v1 - v0) * easedProgress;
+        const x = (timeAtPoint * zoom - scrollX) * dpr;
+        const y = valToCanvasY(valueAtPoint);
+        if (s === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  for (let fi = 0; fi < frames.length; fi++) {
+    const f = frames[fi];
+    const t = clipDelay + timeToSecs(f.time);
+    const v = typeof f.value === 'number' ? f.value : 0;
+    const x = (t * zoom - scrollX) * dpr;
+    const y = valToCanvasY(v);
+    if (x < -20 * dpr || x > cw + 20 * dpr) continue;
+
+    const isSel = selKf?.propKey === propKey && selKf.frameIndex === fi;
+    ctx.beginPath();
+    ctx.arc(x, y, 4.5 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = isSel ? sett.keyframes.keyframeSelected : sett.keyframes.keyframeColor;
+    ctx.strokeStyle = isSel ? '#16a34a' : '#a07820';
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#7a93bc';
+  ctx.font = `${9 * dpr}px Inter, sans-serif`;
+  ctx.textAlign = 'left';
+  const maxLabel = maxVal.toFixed(1);
+  const minLabel = minVal.toFixed(1);
+  ctx.fillText(maxLabel, 3 * dpr, (graphY + padV + 8) * dpr);
+  ctx.fillText(minLabel, 3 * dpr, (graphY + graphH - padV - 2) * dpr);
+}
+
 function drawTracks(
   canvas: HTMLCanvasElement,
   clip: Record<string, unknown>,
   props: PropDef[],
+  expandedProps: Set<string>,
   zoom: number,
   scrollX: number,
   selKf: SelectedKf | null,
   dpr: number
 ) {
   const cw = canvas.width;
-  const ch = canvas.height;
   const ctx = canvas.getContext('2d')!;
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, cw, canvas.height);
 
   const sett = getSettings();
-  const rowH = ROW_H();
   const diamondSize = DIAMOND();
   const clipDelay = timeToSecs((clip as any).delay ?? (clip as any)._delay ?? 0);
 
+  let currentY = 0;
+
   for (let i = 0; i < props.length; i++) {
     const prop = props[i];
-    const rowY = i * rowH * dpr;
+    const isExpanded = expandedProps.has(prop.key);
+    const normalH = ROW_H();
+    const rowH = isExpanded ? normalH + normalH * CURVE_H_MULT : normalH;
 
     ctx.fillStyle = i % 2 === 0 ? sett.timeline.trackBg : sett.timeline.trackAltBg;
-    ctx.fillRect(0, rowY, cw, rowH * dpr);
+    ctx.fillRect(0, currentY * dpr, cw, rowH * dpr);
 
     ctx.strokeStyle = sett.appearance.borderPrimary;
     ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(0, rowY + rowH * dpr - 0.5);
-    ctx.lineTo(cw, rowY + rowH * dpr - 0.5);
+    ctx.moveTo(0, (currentY + rowH) * dpr - 0.5);
+    ctx.lineTo(cw, (currentY + rowH) * dpr - 0.5);
     ctx.stroke();
 
-    const centerY = rowY + rowH * dpr / 2;
-
+    const centerY = (currentY + normalH / 2) * dpr;
     const frames = getFrames(clip, prop.key);
+
     if (frames.length >= 2) {
       ctx.strokeStyle = sett.keyframes.keyframeLine;
       ctx.lineWidth = 1.5;
@@ -220,7 +328,121 @@ function drawTracks(
       ctx.stroke();
       ctx.restore();
     });
+
+    if (isExpanded) {
+      drawCurveGraph(
+        ctx,
+        frames,
+        clipDelay,
+        i,
+        currentY + normalH,
+        normalH * CURVE_H_MULT,
+        zoom,
+        scrollX,
+        cw,
+        dpr,
+        prop.key,
+        selKf
+      );
+    }
+
+    currentY += rowH;
   }
+}
+
+function dismissEasingMenu() {
+  document.querySelectorAll('.kf-curve-menu').forEach(el => el.remove());
+}
+
+function showEasingMenu(
+  clientX: number,
+  clientY: number,
+  frame: KfFrame,
+  onSelect: (id: string) => void
+) {
+  dismissEasingMenu();
+
+  const currentEasing = frame._customEasing ?? frame.easing ?? 'linear';
+  const menu = document.createElement('div');
+  menu.className = 'kf-curve-menu';
+
+  const groups = [...new Set(EASING_PRESETS.map(p => p.group))];
+  for (const group of groups) {
+    const presets = EASING_PRESETS.filter(p => p.group === group);
+    const groupEl = document.createElement('div');
+    groupEl.className = 'kf-curve-menu-section';
+
+    const label = document.createElement('div');
+    label.className = 'kf-curve-menu-section-label';
+    label.textContent = group;
+    groupEl.appendChild(label);
+
+    for (const preset of presets) {
+      const item = document.createElement('button');
+      item.className = 'kf-curve-menu-item';
+      if (preset.id === currentEasing) item.classList.add('kf-curve-menu-item--active');
+
+      const preview = document.createElement('span');
+      preview.className = 'kf-curve-preview';
+      preview.innerHTML = makeCurveSvg(preset.id, 48, 26,
+        preset.id === currentEasing ? '#f5ca5a' : '#3b7dd8', 1.5);
+
+      const text = document.createElement('span');
+      text.className = 'kf-curve-item-label';
+      text.textContent = preset.label;
+
+      if (preset.id === currentEasing) {
+        const check = document.createElement('span');
+        check.className = 'kf-curve-item-check';
+        check.innerHTML = `<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg>`;
+        item.appendChild(preview);
+        item.appendChild(text);
+        item.appendChild(check);
+      } else {
+        item.appendChild(preview);
+        item.appendChild(text);
+      }
+
+      item.addEventListener('click', e => {
+        e.stopPropagation();
+        onSelect(preset.id);
+        dismissEasingMenu();
+      });
+
+      groupEl.appendChild(item);
+    }
+
+    menu.appendChild(groupEl);
+  }
+
+  document.body.appendChild(menu);
+
+  const w = 220;
+  let left = clientX + 4;
+  let top = clientY;
+  if (left + w > window.innerWidth) left = clientX - w - 4;
+  if (top + menu.offsetHeight > window.innerHeight) top = window.innerHeight - menu.offsetHeight - 8;
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+
+  const close = (e: Event) => {
+    if (!menu.contains(e.target as Node)) {
+      dismissEasingMenu();
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', closeOnEsc);
+    }
+  };
+  const closeOnEsc = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      dismissEasingMenu();
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', closeOnEsc);
+    }
+  };
+  setTimeout(() => {
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', closeOnEsc);
+  }, 10);
 }
 
 export function setupAnimationPanel(
@@ -235,11 +457,13 @@ export function setupAnimationPanel(
   let selKf: SelectedKf | null = null;
   let scrollX = 0;
   const dpr = window.devicePixelRatio || 1;
+  const expandedProps = new Set<string>();
 
   let rulerCanvas: HTMLCanvasElement | null = null;
   let tracksCanvas: HTMLCanvasElement | null = null;
   let playheadEl: HTMLElement | null = null;
   let tracksScrollEl: HTMLElement | null = null;
+  let labelsColEl: HTMLElement | null = null;
   let propRowEls: Map<string, HTMLElement> = new Map();
 
   function getCurrentTimeSecs(): number {
@@ -298,16 +522,24 @@ export function setupAnimationPanel(
     playheadEl.style.left = `${x}px`;
   }
 
+  function getTotalTracksHeight(): number {
+    let h = 0;
+    for (const prop of props) {
+      h += expandedProps.has(prop.key) ? ROW_H() * (1 + CURVE_H_MULT) : ROW_H();
+    }
+    return h;
+  }
+
   function redrawTracks() {
     const clip = getClip();
     if (!tracksCanvas || !clip) return;
-    const h = props.length * ROW_H();
+    const totalH = getTotalTracksHeight();
     const pw = tracksScrollEl?.clientWidth ?? 400;
     tracksCanvas.style.width = `${pw}px`;
-    tracksCanvas.style.height = `${h}px`;
+    tracksCanvas.style.height = `${totalH}px`;
     tracksCanvas.width = Math.round(pw * dpr);
-    tracksCanvas.height = Math.round(h * dpr);
-    drawTracks(tracksCanvas, clip, props, state.zoom, scrollX, selKf, dpr);
+    tracksCanvas.height = Math.round(totalH * dpr);
+    drawTracks(tracksCanvas, clip, props, expandedProps, state.zoom, scrollX, selKf, dpr);
 
     if (rulerCanvas && tracksScrollEl) {
       const rw = tracksScrollEl.clientWidth;
@@ -319,8 +551,78 @@ export function setupAnimationPanel(
       drawRuler(ctx, rulerCanvas.width, state.zoom, scrollX, dpr);
     }
 
+    rebuildLabels();
     updatePlayhead();
     updatePropValues();
+  }
+
+  function rebuildLabels() {
+    if (!labelsColEl) return;
+    labelsColEl.innerHTML = '';
+    for (const prop of props) {
+      const isExpanded = expandedProps.has(prop.key);
+      const normalH = ROW_H();
+      const rowH = isExpanded ? normalH + normalH * CURVE_H_MULT : normalH;
+
+      const lbl = document.createElement('div');
+      lbl.className = 'kft-label-row';
+      lbl.style.height = `${rowH}px`;
+      lbl.style.alignItems = 'flex-start';
+      lbl.style.paddingTop = '0';
+      lbl.style.flexDirection = 'column';
+      lbl.style.justifyContent = 'flex-start';
+
+      const topRow = document.createElement('div');
+      topRow.className = 'kft-label-top-row';
+      topRow.style.height = `${normalH}px`;
+      topRow.style.display = 'flex';
+      topRow.style.alignItems = 'center';
+      topRow.style.width = '100%';
+      topRow.style.paddingLeft = '6px';
+      topRow.style.gap = '4px';
+
+      const arrowBtn = document.createElement('button');
+      arrowBtn.className = `kft-expand-btn${isExpanded ? ' kft-expand-btn--open' : ''}`;
+      arrowBtn.title = isExpanded ? 'Collapse curve' : 'Expand curve';
+      arrowBtn.innerHTML = `<svg viewBox="0 0 8 8" fill="currentColor"><polygon points="${isExpanded ? '1,2 7,2 4,7' : '2,1 7,4 2,7'}"/></svg>`;
+      arrowBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (expandedProps.has(prop.key)) expandedProps.delete(prop.key);
+        else expandedProps.add(prop.key);
+        redrawTracks();
+      });
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'kft-label-name';
+      nameEl.textContent = prop.label;
+      nameEl.style.overflow = 'hidden';
+      nameEl.style.textOverflow = 'ellipsis';
+      nameEl.style.whiteSpace = 'nowrap';
+
+      topRow.appendChild(arrowBtn);
+      topRow.appendChild(nameEl);
+      lbl.appendChild(topRow);
+
+      if (isExpanded) {
+        const curveLabel = document.createElement('div');
+        curveLabel.className = 'kft-label-curve-hint';
+        const c = getClip();
+        if (c) {
+          const frames = getFrames(c, prop.key);
+          if (selKf?.propKey === prop.key && selKf.frameIndex < frames.length) {
+            const f = frames[selKf.frameIndex];
+            const easingId = f._customEasing ?? f.easing ?? 'linear';
+            const preset = EASING_PRESETS.find(p => p.id === easingId);
+            curveLabel.textContent = preset?.label ?? easingId;
+          } else {
+            curveLabel.textContent = 'value curve';
+          }
+        }
+        lbl.appendChild(curveLabel);
+      }
+
+      labelsColEl.appendChild(lbl);
+    }
   }
 
   function buildPropsPanel(clip: Record<string, unknown>) {
@@ -435,6 +737,32 @@ export function setupAnimationPanel(
     }
   }
 
+  function hitTestKeyframe(cx: number, cy: number): { propKey: string; frameIndex: number; frame: KfFrame } | null {
+    const c = getClip();
+    if (!c) return null;
+    const clipDelay = timeToSecs((c as any)._delay ?? (c as any).delay ?? 0);
+    let currentY = 0;
+    for (const prop of props) {
+      const normalH = ROW_H();
+      const rowH = expandedProps.has(prop.key) ? normalH + normalH * CURVE_H_MULT : normalH;
+      if (cy >= currentY && cy < currentY + rowH) {
+        const centerY = currentY + normalH / 2;
+        const frames = getFrames(c, prop.key);
+        for (let fi = 0; fi < frames.length; fi++) {
+          const t = clipDelay + timeToSecs(frames[fi].time);
+          const dx = (t * state.zoom - scrollX) - cx;
+          const dy = centerY - cy;
+          if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+            return { propKey: prop.key, frameIndex: fi, frame: frames[fi] };
+          }
+        }
+        return null;
+      }
+      currentY += rowH;
+    }
+    return null;
+  }
+
   function buildTimelinePanel(_clip: Record<string, unknown>) {
     timelineEl.innerHTML = '';
     selKf = null;
@@ -447,13 +775,9 @@ export function setupAnimationPanel(
     labelsCol.className = 'kft-labels';
     labelsCol.style.width = `${LABEL_W()}px`;
     body.appendChild(labelsCol);
+    labelsColEl = labelsCol;
 
-    for (const prop of props) {
-      const lbl = document.createElement('div');
-      lbl.className = 'kft-label-row';
-      lbl.textContent = prop.label;
-      labelsCol.appendChild(lbl);
-    }
+    rebuildLabels();
 
     const tracksPanel = document.createElement('div');
     tracksPanel.className = 'kft-tracks-panel';
@@ -492,39 +816,47 @@ export function setupAnimationPanel(
       const rect = tracksCanvas!.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-      const clickedTimeSecs = (cx + scrollX) / state.zoom;
-      const rowIndex = Math.floor(cy / ROW_H());
-      const prop = props[rowIndex];
-      if (!prop) { state.composition.seek(clickedTimeSecs); return; }
 
-      const c = getClip();
-      if (!c) return;
-      const clipDelay = timeToSecs((c as any)._delay ?? (c as any).delay ?? 0);
-      const frames = getFrames(c, prop.key);
-      for (let fi = 0; fi < frames.length; fi++) {
-        const t = clipDelay + timeToSecs(frames[fi].time);
-        const dx = (t * state.zoom - scrollX) - cx;
-        const dy = (rowIndex + 0.5) * ROW_H() - cy;
-        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
-          selKf = { propKey: prop.key, frameIndex: fi };
-          redrawTracks();
-          return;
-        }
+      const hit = hitTestKeyframe(cx, cy);
+      if (hit) {
+        selKf = { propKey: hit.propKey, frameIndex: hit.frameIndex };
+        redrawTracks();
+        return;
       }
+
       selKf = null;
-      state.composition.seek(clickedTimeSecs);
+      state.composition.seek((cx + scrollX) / state.zoom);
       redrawTracks();
     });
 
     tracksCanvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      if (!selKf) return;
-      const c = getClip();
-      if (!c) return;
-      removeKf(c, selKf.propKey, selKf.frameIndex);
-      selKf = null;
-      redrawTracks();
-      state.composition.update();
+      const rect = tracksCanvas!.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      const hit = hitTestKeyframe(cx, cy);
+      if (hit) {
+        selKf = { propKey: hit.propKey, frameIndex: hit.frameIndex };
+        redrawTracks();
+        showEasingMenu(e.clientX, e.clientY, hit.frame, (easingId) => {
+          (hit.frame as any)._customEasing = easingId;
+          (hit.frame as any).easing = toCoreEasing(easingId);
+          redrawTracks();
+          state.composition.update();
+        });
+        return;
+      }
+
+      if (selKf) {
+        const c = getClip();
+        if (c) {
+          removeKf(c, selKf.propKey, selKf.frameIndex);
+          selKf = null;
+          redrawTracks();
+          state.composition.update();
+        }
+      }
     });
 
     const roTracks = new ResizeObserver(() => redrawTracks());
@@ -536,6 +868,7 @@ export function setupAnimationPanel(
   function buildEmpty() {
     propsEl.innerHTML = '';
     timelineEl.innerHTML = '';
+    labelsColEl = null;
 
     const emptyP = document.createElement('div');
     emptyP.className = 'kf-empty';
