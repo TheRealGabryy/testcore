@@ -8,6 +8,7 @@ import { setupRightPanel } from './right-panel';
 import { setupColorPanel } from './color-panel';
 import { createColorGradingOverlay } from './color-grading';
 import { setupAnimationPanel } from './animation-panel';
+import { setupStudioColorsPanel } from './studio-colors-panel';
 import { initSettings, getSettings as _getSettings } from './settings';
 import { openSettingsPanel } from './settings-panel';
 import { openExportPanel, runExport } from './export-panel';
@@ -40,6 +41,7 @@ export async function createEditor(config: EditorConfig): Promise<EditorHandle> 
   const playerEl = document.querySelector('#player') as HTMLElement;
   const kfPropsPanel = document.querySelector('#keyframe-props-panel') as HTMLElement;
   const kfTimelineSection = document.querySelector('#keyframe-timeline-section') as HTMLElement;
+  const studioColorsPanel = document.querySelector('#studio-colors-panel') as HTMLElement;
 
   function handleExport() {
     openExportPanel(state, (exportConfig) => {
@@ -143,6 +145,7 @@ export async function createEditor(config: EditorConfig): Promise<EditorHandle> 
   setupRightPanel(rightPanel, state);
   setupColorPanel(colorPanel, state, () => gradingOverlay.update());
   setupAnimationPanel(kfPropsPanel, kfTimelineSection, state);
+  setupStudioColorsPanel(studioColorsPanel, state, () => gradingOverlay.update());
 
   return {
     composition,

@@ -60,12 +60,13 @@ input, textarea, [contenteditable] { user-select: text; }
 #keyframe-timeline-section,
 #micro-scrub-section,
 #asset-folder-panel,
-#asset-meta-panel { display: none; }
+#asset-meta-panel,
+#studio-colors-panel { display: none; }
 
 /* Shared grid item constraints */
 #left-panel, #center, #right-panel, #timeline-controls-bar, #timeline-section,
 #color-panel, #keyframe-props-panel, #keyframe-timeline-section,
-#micro-scrub-section, #asset-folder-panel, #asset-meta-panel {
+#micro-scrub-section, #asset-folder-panel, #asset-meta-panel, #studio-colors-panel {
   min-width: 0;
   min-height: 0;
 }
@@ -163,6 +164,28 @@ input, textarea, [contenteditable] { user-select: text; }
 #editor[data-layout="assets"] #right-panel           { display: none; }
 #editor[data-layout="assets"] #timeline-controls-bar { display: none; }
 #editor[data-layout="assets"] #timeline-section      { display: none; }
+
+/* ─── LAYOUT: STUDIO ─────────────────────────────────────────────────────── */
+/* 14 columns, 3 rows:
+   Row 1 (top half):    assets(3) + preview(5) + kf-timeline(3) + right-props(3)
+   Row 2 (controls):    timeline-bar(11) + right-props(3) [spans row]
+   Row 3 (bottom half): timeline(5) + studio-colors(6) + right-props(3) [spans row] */
+#editor[data-layout="studio"] #content-area {
+  grid-template-columns: repeat(14, 1fr);
+  grid-template-rows: 1fr auto 1fr;
+  grid-template-areas:
+    "assets  assets  assets   preview preview preview preview preview  kftl   kftl   kftl   right  right  right"
+    "tlbar   tlbar   tlbar    tlbar   tlbar   tlbar   tlbar   tlbar    tlbar  tlbar  tlbar  right  right  right"
+    "tl      tl      tl       tl      tl      colors  colors  colors   colors colors colors right  right  right";
+}
+#editor[data-layout="studio"] #left-panel                { grid-area: assets; display: flex; }
+#editor[data-layout="studio"] #center                    { grid-area: preview; display: flex; }
+#editor[data-layout="studio"] #keyframe-timeline-section { grid-area: kftl; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
+#editor[data-layout="studio"] #timeline-controls-bar     { grid-area: tlbar; display: flex; }
+#editor[data-layout="studio"] #timeline-section          { grid-area: tl; display: flex; }
+#editor[data-layout="studio"] #studio-colors-panel       { grid-area: colors; display: flex; flex-direction: column; border-left: 1px solid var(--border); overflow: hidden; }
+#editor[data-layout="studio"] #right-panel               { grid-area: right; display: flex; flex-direction: column; }
+#editor[data-layout="studio"] #keyframe-props-panel      { display: none; }
 
 /* Icon Sidebar */
 #icon-sidebar {
@@ -3316,5 +3339,159 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   font-size: 10px;
   color: var(--accent);
   text-align: center;
+}
+
+/* ─── STUDIO COLORS PANEL ────────────────────────────────────────────────── */
+.studio-colors-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-panel);
+}
+
+.studio-colors-tabbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.studio-colors-tab {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+  margin-bottom: -1px;
+  border-radius: 3px 3px 0 0;
+}
+.studio-colors-tab:hover { color: var(--text-2); background: var(--bg-hover); }
+.studio-colors-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.studio-colors-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Wheels — override wh-grid to horizontal row inside studio context */
+.studio-wheels-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.studio-wheels-wrap .wh-tab {
+  height: 100%;
+  overflow: hidden;
+}
+.studio-wheels-wrap .wh-grid {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  gap: 1px;
+  height: 100%;
+  overflow: hidden;
+}
+.studio-wheels-wrap .wh-cell {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  justify-content: flex-start;
+}
+.studio-wheels-wrap .cg-wheel-area {
+  flex-shrink: 0;
+}
+
+/* Curves */
+.studio-curves-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.studio-curves-toprow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.studio-curves-chbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.studio-curves-chbtn {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.studio-curves-chbtn:hover { background: var(--bg-hover); color: var(--text-2); }
+.studio-curves-chbtn.active {
+  background: color-mix(in srgb, var(--ch-color) 15%, transparent);
+  border-color: var(--ch-color);
+  color: var(--ch-color);
+}
+
+.studio-curves-hint {
+  flex: 1;
+  font-size: 9px;
+  color: var(--text-3);
+  text-align: center;
+  opacity: 0.7;
+}
+
+.studio-curves-reset {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.studio-curves-reset:hover { background: var(--bg-hover); color: var(--text-2); }
+.studio-curves-reset svg { width: 13px; height: 13px; }
+
+.studio-curves-canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.studio-curves-canvas {
+  display: block;
+  cursor: crosshair;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 

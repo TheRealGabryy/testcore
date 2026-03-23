@@ -28,6 +28,11 @@ const LAYOUT_TABS = [
     title: 'Assets',
     icon: svgIcon('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'),
   },
+  {
+    id: 'studio',
+    title: 'Studio',
+    icon: svgIcon('<rect x="2" y="3" width="20" height="18" rx="2"/><path d="M2 9h20"/><path d="M9 9v12"/>'),
+  },
 ];
 
 export function setupIconSidebar(
