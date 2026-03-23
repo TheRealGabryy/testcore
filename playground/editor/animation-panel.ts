@@ -296,38 +296,40 @@ function drawTracks(
     const centerY = (currentY + normalH / 2) * dpr;
     const frames = getFrames(clip, prop.key);
 
-    if (frames.length >= 2) {
-      ctx.strokeStyle = sett.keyframes.keyframeLine;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      let first = true;
-      for (const f of frames) {
+    if (!isExpanded) {
+      if (frames.length >= 2) {
+        ctx.strokeStyle = sett.keyframes.keyframeLine;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        let first = true;
+        for (const f of frames) {
+          const t = clipDelay + timeToSecs(f.time);
+          const x = (t * zoom - scrollX) * dpr;
+          if (first) { ctx.moveTo(x, centerY); first = false; }
+          else ctx.lineTo(x, centerY);
+        }
+        ctx.stroke();
+      }
+
+      frames.forEach((f, fi) => {
         const t = clipDelay + timeToSecs(f.time);
         const x = (t * zoom - scrollX) * dpr;
-        if (first) { ctx.moveTo(x, centerY); first = false; }
-        else ctx.lineTo(x, centerY);
-      }
-      ctx.stroke();
+        if (x < -20 || x > cw + 20) return;
+        const isSelected = selKf?.propKey === prop.key && selKf.frameIndex === fi;
+        const d = diamondSize * dpr;
+        ctx.save();
+        ctx.translate(x, centerY);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = isSelected ? sett.keyframes.keyframeSelected : sett.keyframes.keyframeColor;
+        ctx.strokeStyle = isSelected ? '#16a34a' : '#a07820';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.rect(-d / 2, -d / 2, d, d);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
     }
-
-    frames.forEach((f, fi) => {
-      const t = clipDelay + timeToSecs(f.time);
-      const x = (t * zoom - scrollX) * dpr;
-      if (x < -20 || x > cw + 20) return;
-      const isSelected = selKf?.propKey === prop.key && selKf.frameIndex === fi;
-      const d = diamondSize * dpr;
-      ctx.save();
-      ctx.translate(x, centerY);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = isSelected ? sett.keyframes.keyframeSelected : sett.keyframes.keyframeColor;
-      ctx.strokeStyle = isSelected ? '#16a34a' : '#a07820';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.rect(-d / 2, -d / 2, d, d);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    });
 
     if (isExpanded) {
       drawCurveGraph(
@@ -744,16 +746,50 @@ export function setupAnimationPanel(
     let currentY = 0;
     for (const prop of props) {
       const normalH = ROW_H();
-      const rowH = expandedProps.has(prop.key) ? normalH + normalH * CURVE_H_MULT : normalH;
+      const isExpanded = expandedProps.has(prop.key);
+      const rowH = isExpanded ? normalH + normalH * CURVE_H_MULT : normalH;
       if (cy >= currentY && cy < currentY + rowH) {
-        const centerY = currentY + normalH / 2;
         const frames = getFrames(c, prop.key);
-        for (let fi = 0; fi < frames.length; fi++) {
-          const t = clipDelay + timeToSecs(frames[fi].time);
-          const dx = (t * state.zoom - scrollX) - cx;
-          const dy = centerY - cy;
-          if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
-            return { propKey: prop.key, frameIndex: fi, frame: frames[fi] };
+
+        if (isExpanded && cy >= currentY + normalH) {
+          const graphY = currentY + normalH;
+          const graphH = normalH * CURVE_H_MULT;
+          const padV = 8;
+          const innerH = graphH - padV * 2;
+
+          let minVal = Infinity, maxVal = -Infinity;
+          for (const f of frames) {
+            const v = typeof f.value === 'number' ? f.value : 0;
+            minVal = Math.min(minVal, v);
+            maxVal = Math.max(maxVal, v);
+          }
+          if (!isFinite(minVal)) { minVal = 0; maxVal = 1; }
+          if (minVal === maxVal) { minVal -= 1; maxVal += 1; }
+          const valRange = maxVal - minVal;
+
+          for (let fi = 0; fi < frames.length; fi++) {
+            const f = frames[fi];
+            const t = clipDelay + timeToSecs(f.time);
+            const v = typeof f.value === 'number' ? f.value : 0;
+            const fx = t * state.zoom - scrollX;
+            const norm = (v - minVal) / valRange;
+            const fy = graphY + padV + (1 - norm) * innerH;
+            if (Math.abs(fx - cx) < 10 && Math.abs(fy - cy) < 10) {
+              return { propKey: prop.key, frameIndex: fi, frame: frames[fi] };
+            }
+          }
+          return null;
+        }
+
+        if (!isExpanded) {
+          const centerY = currentY + normalH / 2;
+          for (let fi = 0; fi < frames.length; fi++) {
+            const t = clipDelay + timeToSecs(frames[fi].time);
+            const dx = (t * state.zoom - scrollX) - cx;
+            const dy = centerY - cy;
+            if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+              return { propKey: prop.key, frameIndex: fi, frame: frames[fi] };
+            }
           }
         }
         return null;
