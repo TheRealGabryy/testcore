@@ -2522,15 +2522,16 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 /* ─── Project Page ────────────────────────────────────────────────────── */
+/* ===== FlashFX Project Page — Navy + Yellow Theme ===== */
 #project-page {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: #0c0c0e;
+  background: #080f1c;
   z-index: 100;
   font-family: var(--font-family, 'Inter', -apple-system, sans-serif);
-  color: #dde6f5;
+  color: #ccdaee;
   overflow: hidden;
 }
 
@@ -2539,8 +2540,9 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  height: 52px;
-  border-bottom: 1px solid #1a1a20;
+  height: 54px;
+  background: #0a1221;
+  border-bottom: 1px solid #132040;
   flex-shrink: 0;
 }
 
@@ -2551,27 +2553,36 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-logo {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
 }
 
 .pp-logo svg {
   width: 100%;
   height: 100%;
+  filter: drop-shadow(0 0 6px rgba(240, 180, 41, 0.35));
 }
 
 .pp-app-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #f0f4ff;
-  letter-spacing: -0.01em;
+  font-size: 15px;
+  font-weight: 700;
+  color: #eaf2ff;
+  letter-spacing: -0.02em;
+}
+
+.pp-app-name span {
+  color: #f0b429;
 }
 
 .pp-version {
-  font-size: 11px;
-  color: #3d4a5e;
+  font-size: 10.5px;
+  color: #2a4060;
   font-weight: 500;
+  background: #0d1d34;
+  border: 1px solid #162640;
+  border-radius: 4px;
+  padding: 2px 7px;
 }
 
 .pp-body {
@@ -2582,13 +2593,13 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 
 /* Sidebar */
 .pp-sidebar {
-  width: 200px;
+  width: 210px;
   flex-shrink: 0;
-  border-right: 1px solid #1a1a20;
+  background: #0a1221;
+  border-right: 1px solid #132040;
   display: flex;
   flex-direction: column;
   padding: 16px 0;
-  gap: 0;
   overflow-y: auto;
 }
 
@@ -2598,7 +2609,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 
 .pp-sidebar-footer {
   margin-top: auto;
-  border-top: 1px solid #1a1a20;
+  border-top: 1px solid #132040;
   padding-top: 14px;
 }
 
@@ -2608,19 +2619,21 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   gap: 8px;
   width: 100%;
   padding: 9px 14px;
-  background: #2563eb;
+  background: #f0b429;
   border: none;
   border-radius: 7px;
-  color: #fff;
+  color: #09111f;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 120ms;
+  transition: background 120ms, box-shadow 120ms;
   letter-spacing: 0.005em;
+  box-shadow: 0 2px 12px rgba(240, 180, 41, 0.25);
 }
 
 .pp-new-btn:hover {
-  background: #1d4ed8;
+  background: #ffc235;
+  box-shadow: 0 2px 18px rgba(240, 180, 41, 0.4);
 }
 
 .pp-new-btn-icon {
@@ -2639,10 +2652,10 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 
 .pp-sidebar-label {
   font-size: 10px;
-  font-weight: 600;
-  color: #3d4a5e;
+  font-weight: 700;
+  color: #2a4060;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   margin-bottom: 6px;
 }
 
@@ -2655,7 +2668,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   background: none;
   border: none;
   border-radius: 6px;
-  color: #7a93bc;
+  color: #4a6a8a;
   font-size: 12px;
   cursor: pointer;
   text-align: left;
@@ -2669,14 +2682,14 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-sidebar-item:hover {
-  background: #151520;
-  color: #dde6f5;
+  background: #0d1d34;
+  color: #ccdaee;
 }
 
 .pp-storage-bar {
   width: 100%;
   height: 4px;
-  background: #1a1a22;
+  background: #0d1d34;
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 5px;
@@ -2684,14 +2697,14 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 
 .pp-storage-fill {
   height: 100%;
-  background: #2563eb;
+  background: #f0b429;
   border-radius: 2px;
   transition: width 400ms;
 }
 
 .pp-storage-text {
   font-size: 10.5px;
-  color: #3d4a5e;
+  color: #2a4060;
 }
 
 /* Main content area */
@@ -2701,38 +2714,43 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
+  background: #080f1c;
 }
 
 .pp-section-header {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .pp-section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #f0f4ff;
+  color: #eaf2ff;
   letter-spacing: -0.01em;
 }
 
 .pp-section-count {
-  font-size: 12px;
-  color: #3d4a5e;
+  font-size: 11.5px;
+  color: #2a4060;
+  background: #0d1d34;
+  border: 1px solid #162640;
+  border-radius: 10px;
+  padding: 1px 8px;
 }
 
 /* Project grid */
 .pp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 16px;
 }
 
 /* Project card */
 .pp-card {
-  background: #111118;
-  border: 1px solid #1a1a22;
+  background: #0a1525;
+  border: 1px solid #142038;
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -2741,14 +2759,14 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-card:hover {
-  border-color: #2a2a3a;
+  border-color: #f0b429;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 0px rgba(240, 180, 41, 0.15);
 }
 
 .pp-card-thumb {
   aspect-ratio: 16/9;
-  background: #0a0a10;
+  background: #060d18;
   position: relative;
   overflow: hidden;
 }
@@ -2766,7 +2784,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1e2030;
+  color: #162038;
 }
 
 .pp-card-thumb-placeholder svg {
@@ -2777,7 +2795,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 .pp-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(8, 15, 28, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2795,12 +2813,12 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  background: #2563eb;
+  background: #f0b429;
   border: none;
   border-radius: 6px;
-  color: #fff;
+  color: #09111f;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background 100ms;
 }
@@ -2811,7 +2829,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-card-open-btn:hover {
-  background: #1d4ed8;
+  background: #ffc235;
 }
 
 .pp-card-delete-btn {
@@ -2820,8 +2838,8 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
   border-radius: 6px;
   color: #ef4444;
   cursor: pointer;
@@ -2834,18 +2852,20 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-card-delete-btn:hover {
-  background: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.22);
   border-color: rgba(239, 68, 68, 0.5);
 }
 
 .pp-card-info {
-  padding: 10px 12px 11px;
+  padding: 10px 12px 12px;
+  background: #0a1525;
+  border-top: 1px solid #142038;
 }
 
 .pp-card-name {
   font-size: 13px;
   font-weight: 600;
-  color: #dde6f5;
+  color: #ccdaee;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2856,8 +2876,8 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
-  color: #3d4a5e;
+  font-size: 10.5px;
+  color: #2a4060;
 }
 
 .pp-card-sep {
@@ -2877,15 +2897,15 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-empty-icon {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #111118;
-  border: 1px solid #1a1a22;
-  border-radius: 12px;
-  color: #2a3040;
+  background: #0a1525;
+  border: 1px solid #142038;
+  border-radius: 14px;
+  color: #1e3050;
   margin-bottom: 8px;
 }
 
@@ -2897,14 +2917,14 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 .pp-empty-title {
   font-size: 16px;
   font-weight: 600;
-  color: #f0f4ff;
+  color: #eaf2ff;
 }
 
 .pp-empty-sub {
   font-size: 12.5px;
-  color: #3d4a5e;
+  color: #2a4060;
   max-width: 260px;
-  line-height: 1.5;
+  line-height: 1.55;
   margin-bottom: 8px;
 }
 
@@ -2924,8 +2944,8 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 .pp-dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(4, 8, 18, 0.8);
+  backdrop-filter: blur(6px);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -2933,12 +2953,12 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-dialog {
-  background: #111118;
-  border: 1px solid #1e1e2a;
-  border-radius: 12px;
+  background: #0a1525;
+  border: 1px solid #1a3050;
+  border-radius: 14px;
   width: 460px;
   max-width: calc(100vw - 40px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(240, 180, 41, 0.06);
   overflow: hidden;
 }
 
@@ -2951,13 +2971,13 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 14px;
-  border-bottom: 1px solid #1a1a22;
+  border-bottom: 1px solid #132040;
 }
 
 .pp-dialog-title {
   font-size: 14px;
   font-weight: 600;
-  color: #f0f4ff;
+  color: #eaf2ff;
 }
 
 .pp-dialog-close {
@@ -2969,7 +2989,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   background: none;
   border: none;
   border-radius: 5px;
-  color: #3d4a5e;
+  color: #2a4060;
   cursor: pointer;
   transition: background 100ms, color 100ms;
 }
@@ -2980,8 +3000,8 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-dialog-close:hover {
-  background: #1a1a22;
-  color: #dde6f5;
+  background: #0d1d34;
+  color: #ccdaee;
 }
 
 .pp-dialog-body {
@@ -2997,17 +3017,17 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   justify-content: flex-end;
   gap: 8px;
   padding: 14px 20px;
-  border-top: 1px solid #1a1a22;
+  border-top: 1px solid #132040;
 }
 
 .pp-dialog-text {
   font-size: 13px;
-  color: #7a93bc;
+  color: #4a6a8a;
   line-height: 1.5;
 }
 
 .pp-dialog-text strong {
-  color: #dde6f5;
+  color: #ccdaee;
 }
 
 .pp-field {
@@ -3017,28 +3037,29 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #7a93bc;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #2a4060;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 .pp-input {
   width: 100%;
   padding: 9px 12px;
-  background: #0d0d14;
-  border: 1px solid #1e1e2a;
+  background: #060d18;
+  border: 1px solid #132040;
   border-radius: 7px;
-  color: #dde6f5;
+  color: #ccdaee;
   font-size: 13px;
   font-family: inherit;
   outline: none;
-  transition: border-color 120ms;
+  transition: border-color 120ms, box-shadow 120ms;
 }
 
 .pp-input:focus {
-  border-color: #2563eb;
+  border-color: #f0b429;
+  box-shadow: 0 0 0 3px rgba(240, 180, 41, 0.12);
 }
 
 /* Resolution presets */
@@ -3053,8 +3074,8 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   flex-direction: column;
   gap: 1px;
   padding: 9px 12px;
-  background: #0d0d14;
-  border: 1px solid #1e1e2a;
+  background: #060d18;
+  border: 1px solid #132040;
   border-radius: 7px;
   cursor: pointer;
   transition: border-color 100ms, background 100ms;
@@ -3068,25 +3089,29 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-preset-item:hover {
-  background: #141420;
-  border-color: #2a2a38;
+  background: #0a1828;
+  border-color: #1e3858;
 }
 
 .pp-preset-item.selected {
-  background: #0d1a30;
-  border-color: #2563eb;
+  background: rgba(240, 180, 41, 0.08);
+  border-color: #f0b429;
+}
+
+.pp-preset-item.selected .pp-preset-label {
+  color: #f0b429;
 }
 
 .pp-preset-label {
   font-size: 12px;
   font-weight: 600;
-  color: #dde6f5;
+  color: #ccdaee;
   font-variant-numeric: tabular-nums;
 }
 
 .pp-preset-sub {
   font-size: 10.5px;
-  color: #3d4a5e;
+  color: #2a4060;
 }
 
 /* Buttons */
@@ -3095,43 +3120,46 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  background: #2563eb;
+  background: #f0b429;
   border: none;
   border-radius: 7px;
-  color: #fff;
+  color: #09111f;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 120ms;
+  transition: background 120ms, box-shadow 120ms;
   font-family: inherit;
+  box-shadow: 0 2px 10px rgba(240, 180, 41, 0.2);
 }
 
 .pp-btn-primary:hover {
-  background: #1d4ed8;
+  background: #ffc235;
+  box-shadow: 0 2px 16px rgba(240, 180, 41, 0.35);
 }
 
 .pp-btn-ghost {
   padding: 8px 16px;
   background: none;
-  border: 1px solid #1e1e2a;
+  border: 1px solid #162640;
   border-radius: 7px;
-  color: #7a93bc;
+  color: #4a6a8a;
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 100ms, color 100ms;
+  transition: border-color 100ms, color 100ms, background 100ms;
   font-family: inherit;
 }
 
 .pp-btn-ghost:hover {
-  border-color: #2a2a38;
-  color: #dde6f5;
+  border-color: #1e3858;
+  color: #ccdaee;
+  background: #0d1d34;
 }
 
 .pp-btn-danger {
   padding: 8px 16px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 7px;
   color: #ef4444;
   font-size: 12.5px;
@@ -3142,7 +3170,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
 }
 
 .pp-btn-danger:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.18);
   border-color: rgba(239, 68, 68, 0.5);
 }
 

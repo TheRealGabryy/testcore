@@ -48,7 +48,7 @@ export function setupLeftPanel(el: HTMLElement, state: EditorState, onLoadDemo?:
         <button class="assets-icon-btn" id="assets-sort-btn" title="Sort">
           ${svgIcon('<line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/>')}
         </button>
-        <button class="assets-demo-btn" id="assets-demo-btn" title="Load Diffusion Studio demo composition">
+        <button class="assets-demo-btn" id="assets-demo-btn" title="Load FlashFX demo composition">
           ${svgIcon('<polygon points="5 3 19 12 5 21 5 3"/>')}
           Demo
         </button>

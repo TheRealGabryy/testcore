@@ -121,7 +121,7 @@ export async function main(composition: core.Composition) {
   const textLayer0 = new core.Layer();
   await composition.add(textLayer0);
   await textLayer0.add(new core.TextClip({
-    text: "Basic text in \nDiffusion Studio",
+    text: "Basic text in \nFlashFX",
     align: 'center',
     baseline: 'middle',
     fontSize: 14,

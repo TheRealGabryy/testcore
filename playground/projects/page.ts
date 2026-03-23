@@ -31,8 +31,8 @@ function svgIcon(path: string): string {
 }
 
 const LOGO_SVG = `<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="36" height="36" rx="8" fill="#2563eb"/>
-  <path d="M10 26V10l16 8-16 8z" fill="white"/>
+  <rect width="36" height="36" rx="8" fill="#0d1f3c"/>
+  <path d="M20 6l-7 12h6l-3 12 9-14h-6l1-10z" fill="#f0b429"/>
 </svg>`;
 
 function renderProjectCard(project: ProjectMeta, onOpen: () => void, onDelete: () => void): HTMLElement {
@@ -194,7 +194,7 @@ export function showProjectPage(callbacks: ProjectPageCallbacks): void {
       <div class="pp-header">
         <div class="pp-header-left">
           <div class="pp-logo">${LOGO_SVG}</div>
-          <span class="pp-app-name">DiffusionStudio</span>
+          <span class="pp-app-name">FlashFX</span>
         </div>
         <div class="pp-header-right">
           <span class="pp-version">v4.0</span>
