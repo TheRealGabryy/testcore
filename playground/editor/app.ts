@@ -12,7 +12,19 @@ import { initSettings, getSettings as _getSettings } from './settings';
 import { openSettingsPanel } from './settings-panel';
 import { openExportPanel, runExport } from './export-panel';
 
-export async function createEditor() {
+export interface EditorConfig {
+  onBack: () => void;
+  onSave: (composition: core.Composition, state: EditorState) => void;
+}
+
+export interface EditorHandle {
+  composition: core.Composition;
+  state: EditorState;
+  applyProjectMeta: (width: number, height: number, background: string) => void;
+  resetEditor: () => void;
+}
+
+export async function createEditor(config: EditorConfig): Promise<EditorHandle> {
   initSettings();
 
   const composition = new core.Composition({ background: '#141416' });
@@ -30,8 +42,8 @@ export async function createEditor() {
   const kfTimelineSection = document.querySelector('#keyframe-timeline-section') as HTMLElement;
 
   function handleExport() {
-    openExportPanel(state, (config) => {
-      runExport(composition, config, state);
+    openExportPanel(state, (exportConfig) => {
+      runExport(composition, exportConfig, state);
     });
   }
 
@@ -114,11 +126,61 @@ export async function createEditor() {
     return state.colorGradingMap.get(sel.editorClip.id) ?? null;
   });
 
-  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange, openSettingsPanel);
+  function handleSave() {
+    config.onSave(composition, state);
+    showSavedToast();
+  }
+
+  function handleBack() {
+    editorRoot.dataset.layout = 'edit';
+    config.onBack();
+  }
+
+  setupIconSidebar(iconSidebar, handleExport, handleLoadDemo, handleLayoutChange, openSettingsPanel, handleBack, handleSave);
   setupLeftPanel(leftPanel, state, handleLoadDemo);
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);
   setupRightPanel(rightPanel, state);
   setupColorPanel(colorPanel, state, () => gradingOverlay.update());
   setupAnimationPanel(kfPropsPanel, kfTimelineSection, state);
+
+  return {
+    composition,
+    state,
+    applyProjectMeta(width: number, height: number, background: string) {
+      try {
+        composition.resize(width, height);
+      } catch {
+        /* ignore */
+      }
+      try {
+        (composition as unknown as Record<string, unknown>)['background'] = background;
+      } catch {
+        /* ignore */
+      }
+    },
+    resetEditor() {
+      composition.clear();
+      state.editorLayers.length = 0;
+      state.selectedClipId = null;
+      state.selectedLayerId = null;
+      state.emit('layers:change');
+      state.emit('selection:change');
+      state.emit('timeline:change');
+      composition.seek(0).catch(() => { /* ignore */ });
+    },
+  };
+}
+
+function showSavedToast() {
+  let toast = document.getElementById('save-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'save-toast';
+    toast.className = 'save-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = 'Project saved';
+  toast.classList.add('save-toast--visible');
+  setTimeout(() => toast!.classList.remove('save-toast--visible'), 2000);
 }

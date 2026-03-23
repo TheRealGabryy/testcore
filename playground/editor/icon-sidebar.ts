@@ -30,9 +30,21 @@ const LAYOUT_TABS = [
   },
 ];
 
-export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDemo: () => void, onLayoutChange: (id: string) => void, onOpenSettings: () => void) {
+export function setupIconSidebar(
+  el: HTMLElement,
+  onExport: () => void,
+  onLoadDemo: () => void,
+  onLayoutChange: (id: string) => void,
+  onOpenSettings: () => void,
+  onBack: () => void,
+  onSave: () => void
+) {
   el.innerHTML = `
     <div class="icon-sidebar-top">
+      <button class="icon-sidebar-btn icon-sidebar-back-btn" id="sidebar-back-btn" title="Back to Projects">
+        ${svgIcon('<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>')}
+      </button>
+      <div class="icon-sidebar-divider"></div>
       ${LAYOUT_TABS.map(tab => `
         <button class="icon-sidebar-btn${tab.id === 'edit' ? ' active' : ''}" data-id="${tab.id}" title="${tab.title}">
           ${tab.icon}
@@ -40,6 +52,9 @@ export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDe
       `).join('')}
     </div>
     <div class="icon-sidebar-bottom">
+      <button class="icon-sidebar-btn icon-sidebar-save-btn" id="sidebar-save-btn" title="Save Project">
+        ${svgIcon('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>')}
+      </button>
       <button class="icon-sidebar-btn" data-id="demo" title="Load Demo">
         ${svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>')}
       </button>
@@ -68,6 +83,8 @@ export function setupIconSidebar(el: HTMLElement, onExport: () => void, onLoadDe
     });
   });
 
+  el.querySelector('#sidebar-back-btn')!.addEventListener('click', onBack);
+  el.querySelector('#sidebar-save-btn')!.addEventListener('click', onSave);
   el.querySelector('#sidebar-settings-btn')!.addEventListener('click', onOpenSettings);
   el.querySelector('#sidebar-export-btn')!.addEventListener('click', onExport);
 }
