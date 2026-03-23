@@ -78,6 +78,7 @@ function readValue(clip: Record<string, unknown>, key: string, compW: number, co
 }
 
 interface SelectedKf { propKey: string; frameIndex: number }
+interface SelectedSeg { propKey: string; segIndex: number }
 type KfFrame = { time: unknown; value: unknown; easing?: string; _customEasing?: string };
 
 function getFrames(clip: Record<string, unknown>, key: string): KfFrame[] {
@@ -167,7 +168,8 @@ function drawCurveGraph(
   cw: number,
   dpr: number,
   propKey: string,
-  selKf: SelectedKf | null
+  selKf: SelectedKf | null,
+  selSeg: SelectedSeg | null
 ) {
   const sett = getSettings();
   ctx.fillStyle = rowIndex % 2 === 0 ? '#0d1523' : '#0a1118';
@@ -212,9 +214,10 @@ function drawCurveGraph(
       const v0 = typeof f0.value === 'number' ? f0.value : 0;
       const v1 = typeof f1.value === 'number' ? f1.value : 0;
       const easingId = f0._customEasing ?? f0.easing ?? 'linear';
+      const isSelSeg = selSeg?.propKey === propKey && selSeg.segIndex === seg;
 
-      ctx.strokeStyle = sett.keyframes.keyframeLine;
-      ctx.lineWidth = 1.5 * dpr;
+      ctx.strokeStyle = isSelSeg ? '#f5ca5a' : sett.keyframes.keyframeLine;
+      ctx.lineWidth = (isSelSeg ? 2.5 : 1.5) * dpr;
       ctx.beginPath();
       for (let s = 0; s <= STEPS; s++) {
         const progress = s / STEPS;
@@ -265,6 +268,7 @@ function drawTracks(
   zoom: number,
   scrollX: number,
   selKf: SelectedKf | null,
+  selSeg: SelectedSeg | null,
   dpr: number
 ) {
   const cw = canvas.width;
@@ -344,7 +348,8 @@ function drawTracks(
         cw,
         dpr,
         prop.key,
-        selKf
+        selKf,
+        selSeg
       );
     }
 
@@ -457,6 +462,7 @@ export function setupAnimationPanel(
 
   let props: PropDef[] = [];
   let selKf: SelectedKf | null = null;
+  let selSeg: SelectedSeg | null = null;
   let scrollX = 0;
   const dpr = window.devicePixelRatio || 1;
   const expandedProps = new Set<string>();
@@ -541,7 +547,7 @@ export function setupAnimationPanel(
     tracksCanvas.style.height = `${totalH}px`;
     tracksCanvas.width = Math.round(pw * dpr);
     tracksCanvas.height = Math.round(totalH * dpr);
-    drawTracks(tracksCanvas, clip, props, expandedProps, state.zoom, scrollX, selKf, dpr);
+    drawTracks(tracksCanvas, clip, props, expandedProps, state.zoom, scrollX, selKf, selSeg, dpr);
 
     if (rulerCanvas && tracksScrollEl) {
       const rw = tracksScrollEl.clientWidth;
@@ -799,9 +805,77 @@ export function setupAnimationPanel(
     return null;
   }
 
+  function hitTestCurveSegment(cx: number, cy: number): { propKey: string; segIndex: number; frame: KfFrame } | null {
+    const c = getClip();
+    if (!c) return null;
+    const clipDelay = timeToSecs((c as any)._delay ?? (c as any).delay ?? 0);
+    let currentY = 0;
+    for (const prop of props) {
+      const normalH = ROW_H();
+      const isExpanded = expandedProps.has(prop.key);
+      const rowH = isExpanded ? normalH + normalH * CURVE_H_MULT : normalH;
+
+      if (isExpanded && cy >= currentY + normalH && cy < currentY + rowH) {
+        const graphY = currentY + normalH;
+        const graphH = normalH * CURVE_H_MULT;
+        const padV = 8;
+        const innerH = graphH - padV * 2;
+        const frames = getFrames(c, prop.key);
+
+        if (frames.length >= 2) {
+          let minVal = Infinity, maxVal = -Infinity;
+          for (const f of frames) {
+            const v = typeof f.value === 'number' ? f.value : 0;
+            minVal = Math.min(minVal, v);
+            maxVal = Math.max(maxVal, v);
+          }
+          if (!isFinite(minVal)) { minVal = 0; maxVal = 1; }
+          if (minVal === maxVal) { minVal -= 1; maxVal += 1; }
+          const valRange = maxVal - minVal;
+          const valToY = (v: number) => graphY + padV + (1 - (v - minVal) / valRange) * innerH;
+
+          const STEPS = 30;
+          const THRESHOLD = 8;
+
+          for (let seg = 0; seg < frames.length - 1; seg++) {
+            const f0 = frames[seg];
+            const f1 = frames[seg + 1];
+            const t0 = clipDelay + timeToSecs(f0.time);
+            const t1 = clipDelay + timeToSecs(f1.time);
+            const v0 = typeof f0.value === 'number' ? f0.value : 0;
+            const v1 = typeof f1.value === 'number' ? f1.value : 0;
+            const easingId = f0._customEasing ?? f0.easing ?? 'linear';
+
+            for (let s = 0; s < STEPS; s++) {
+              const p0 = s / STEPS;
+              const p1 = (s + 1) / STEPS;
+              const sx0 = (t0 + (t1 - t0) * p0) * state.zoom - scrollX;
+              const sy0 = valToY(v0 + (v1 - v0) * applyEasing(p0, easingId));
+              const sx1 = (t0 + (t1 - t0) * p1) * state.zoom - scrollX;
+              const sy1 = valToY(v0 + (v1 - v0) * applyEasing(p1, easingId));
+
+              const dx = sx1 - sx0, dy = sy1 - sy0;
+              const lenSq = dx * dx + dy * dy;
+              if (lenSq === 0) continue;
+              const t = Math.max(0, Math.min(1, ((cx - sx0) * dx + (cy - sy0) * dy) / lenSq));
+              const dist = Math.hypot(cx - (sx0 + t * dx), cy - (sy0 + t * dy));
+              if (dist < THRESHOLD) {
+                return { propKey: prop.key, segIndex: seg, frame: frames[seg] };
+              }
+            }
+          }
+        }
+        return null;
+      }
+      currentY += rowH;
+    }
+    return null;
+  }
+
   function buildTimelinePanel(_clip: Record<string, unknown>) {
     timelineEl.innerHTML = '';
     selKf = null;
+    selSeg = null;
 
     const body = document.createElement('div');
     body.className = 'kft-body';
@@ -856,11 +930,21 @@ export function setupAnimationPanel(
       const hit = hitTestKeyframe(cx, cy);
       if (hit) {
         selKf = { propKey: hit.propKey, frameIndex: hit.frameIndex };
+        selSeg = null;
+        redrawTracks();
+        return;
+      }
+
+      const segHit = hitTestCurveSegment(cx, cy);
+      if (segHit) {
+        selSeg = { propKey: segHit.propKey, segIndex: segHit.segIndex };
+        selKf = null;
         redrawTracks();
         return;
       }
 
       selKf = null;
+      selSeg = null;
       state.composition.seek((cx + scrollX) / state.zoom);
       redrawTracks();
     });
@@ -874,10 +958,26 @@ export function setupAnimationPanel(
       const hit = hitTestKeyframe(cx, cy);
       if (hit) {
         selKf = { propKey: hit.propKey, frameIndex: hit.frameIndex };
+        selSeg = null;
         redrawTracks();
         showEasingMenu(e.clientX, e.clientY, hit.frame, (easingId) => {
           (hit.frame as any)._customEasing = easingId;
           (hit.frame as any).easing = toCoreEasing(easingId);
+          redrawTracks();
+          state.composition.update();
+        });
+        return;
+      }
+
+      const segHit = hitTestCurveSegment(cx, cy);
+      if (segHit) {
+        selSeg = { propKey: segHit.propKey, segIndex: segHit.segIndex };
+        selKf = null;
+        redrawTracks();
+        showEasingMenu(e.clientX, e.clientY, segHit.frame, (easingId) => {
+          (segHit.frame as any)._customEasing = easingId;
+          (segHit.frame as any).easing = toCoreEasing(easingId);
+          selSeg = null;
           redrawTracks();
           state.composition.update();
         });
