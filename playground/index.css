@@ -301,6 +301,26 @@ input, textarea, [contenteditable] { user-select: text; }
 }
 .assets-import-btn:hover { background: var(--bg-hover); color: var(--text); border-color: var(--text-3); }
 .assets-import-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.assets-support-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, #e85d4a 40%, transparent);
+  background: color-mix(in srgb, #e85d4a 10%, transparent);
+  color: #e85d4a;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+.assets-support-btn:hover { background: color-mix(in srgb, #e85d4a 18%, transparent); border-color: #e85d4a; }
+.assets-support-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .assets-demo-btn {
   display: flex;
   align-items: center;
@@ -3509,4 +3529,140 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   top: 0;
   left: 0;
 }
+
+/* ─── PROJECT PAGE SUPPORT BUTTON ─────────────────────────────────────────── */
+.pp-support-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  background: rgba(232, 93, 74, 0.08);
+  border: 1px solid rgba(232, 93, 74, 0.3);
+  border-radius: 6px;
+  color: #c94a36;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 100ms, border-color 100ms, color 100ms;
+}
+.pp-support-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pp-support-btn:hover {
+  background: rgba(232, 93, 74, 0.15);
+  border-color: rgba(232, 93, 74, 0.6);
+  color: #b83d2a;
+}
+
+/* ─── DONATE MODAL ─────────────────────────────────────────────────────────── */
+.donate-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.donate-overlay--visible { opacity: 1; }
+
+.donate-modal {
+  position: relative;
+  background: #1a2537;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 32px 28px 28px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  transform: translateY(4px);
+  transition: transform 0.18s ease;
+}
+.donate-overlay--visible .donate-modal { transform: translateY(0); }
+
+.donate-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, color 0.1s;
+}
+.donate-close:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); }
+.donate-close svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+
+.donate-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(232, 93, 74, 0.12);
+  border: 1px solid rgba(232, 93, 74, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e85d4a;
+  margin-bottom: 4px;
+}
+.donate-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.donate-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e8edf5;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.donate-message {
+  font-size: 13px;
+  color: rgba(200, 215, 235, 0.75);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.donate-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  background: #e85d4a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  border: none;
+}
+.donate-btn:hover { background: #d44e3b; transform: translateY(-1px); }
+.donate-btn:active { transform: translateY(0); }
+.donate-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 
