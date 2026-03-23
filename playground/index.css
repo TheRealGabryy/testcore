@@ -169,14 +169,14 @@ input, textarea, [contenteditable] { user-select: text; }
 /* 14 columns, 3 rows:
    Row 1 (top half):    assets(3) + preview(5) + kf-timeline(3) + right-props(3)
    Row 2 (controls):    timeline-bar(11) + right-props(3) [spans row]
-   Row 3 (bottom half): timeline(5) + studio-colors(6) + right-props(3) [spans row] */
+   Row 3 (bottom half): timeline(8) + studio-colors(3) + right-props(3) [spans row] */
 #editor[data-layout="studio"] #content-area {
   grid-template-columns: repeat(14, 1fr);
   grid-template-rows: 1fr auto 1fr;
   grid-template-areas:
     "assets  assets  assets   preview preview preview preview preview  kftl   kftl   kftl   right  right  right"
     "tlbar   tlbar   tlbar    tlbar   tlbar   tlbar   tlbar   tlbar    tlbar  tlbar  tlbar  right  right  right"
-    "tl      tl      tl       tl      tl      colors  colors  colors   colors colors colors right  right  right";
+    "tl      tl      tl       tl      tl      tl      tl      tl       colors colors colors right  right  right";
 }
 #editor[data-layout="studio"] #left-panel                { grid-area: assets; display: flex; }
 #editor[data-layout="studio"] #center                    { grid-area: preview; display: flex; }
@@ -3396,21 +3396,7 @@ input[type="color"].prop-input { padding: 1px 2px; cursor: pointer; height: 26px
   overflow: hidden;
 }
 .studio-wheels-wrap .wh-grid {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  gap: 1px;
-  height: 100%;
   overflow: hidden;
-}
-.studio-wheels-wrap .wh-cell {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  justify-content: flex-start;
-}
-.studio-wheels-wrap .cg-wheel-area {
-  flex-shrink: 0;
 }
 
 /* Curves */
