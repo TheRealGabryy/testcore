@@ -143,9 +143,15 @@ export async function createEditor(config: EditorConfig): Promise<EditorHandle> 
   setupPreview(playbackBar, state);
   setupTimeline(timelineControlsBar, timelineArea, state);
   setupRightPanel(rightPanel, state);
-  setupColorPanel(colorPanel, state, () => gradingOverlay.update());
+  setupColorPanel(colorPanel, state, () => {
+    gradingOverlay.update();
+    state.emit('grading:change');
+  });
   setupAnimationPanel(kfPropsPanel, kfTimelineSection, state);
-  setupStudioColorsPanel(studioColorsPanel, state, () => gradingOverlay.update());
+  setupStudioColorsPanel(studioColorsPanel, state, () => {
+    gradingOverlay.update();
+    state.emit('grading:change');
+  });
 
   return {
     composition,

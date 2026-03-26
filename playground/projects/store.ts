@@ -55,6 +55,7 @@ export function createProject(name: string, width: number, height: number): Proj
     layers: [],
     clips: {},
     zoom: 80,
+    colorGrading: {},
   };
   persistProject(project);
   return project;
@@ -64,7 +65,7 @@ export function saveProject(projectId: string, state: EditorState, composition: 
   const existing = loadProject(projectId);
   if (!existing) return;
 
-  const { layers, clips } = serializeEditorState(state);
+  const { layers, clips, colorGrading } = serializeEditorState(state);
   const thumbnail = captureThumb(composition);
 
   const updated: ProjectData = {
@@ -77,6 +78,7 @@ export function saveProject(projectId: string, state: EditorState, composition: 
     layers,
     clips,
     zoom: state.zoom,
+    colorGrading,
   };
 
   persistProject(updated);
@@ -131,7 +133,16 @@ function captureThumb(composition: core.Composition): string {
   }
 }
 
-function serializeEditorState(state: EditorState): { layers: SerializedLayer[]; clips: Record<string, SerializedClip[]> } {
+const COMMON_PROPS = [
+  'x', 'y', 'rotation', 'opacity', 'scaleX', 'scaleY',
+  'translateX', 'translateY', 'blendMode', 'anchorX', 'anchorY',
+];
+
+function serializeEditorState(state: EditorState): {
+  layers: SerializedLayer[];
+  clips: Record<string, SerializedClip[]>;
+  colorGrading: Record<string, unknown>;
+} {
   const layers: SerializedLayer[] = [];
   const clips: Record<string, SerializedClip[]> = {};
 
@@ -163,30 +174,50 @@ function serializeEditorState(state: EditorState): { layers: SerializedLayer[]; 
       }
 
       const props: Record<string, unknown> = {};
-      for (const key of ['x', 'y', 'rotation', 'opacity', 'scaleX', 'scaleY', 'translateX', 'translateY', 'blendMode']) {
+
+      for (const key of COMMON_PROPS) {
         if (clip[key] !== undefined) props[key] = clip[key];
       }
 
       if (type === 'TEXT') {
-        for (const key of ['text', 'fontSize', 'align', 'baseline', 'color', 'casing']) {
+        for (const key of ['text', 'fontSize', 'align', 'baseline', 'color', 'casing',
+          'fontWeight', 'fontFamily', 'letterSpacing', 'lineHeight',
+          'strokeColor', 'strokeWidth', 'shadowColor', 'shadowBlur',
+          'shadowOffsetX', 'shadowOffsetY', 'backgroundFill', 'backgroundPadding',
+          'backgroundRadius', 'width', 'height', 'wrap']) {
           if (clip[key] !== undefined) props[key] = clip[key];
         }
       }
 
       if (type === 'RECT' || type === 'RECTANGLE') {
-        for (const key of ['width', 'height', 'fill', 'radius']) {
+        for (const key of ['width', 'height', 'fill', 'radius',
+          'strokeColor', 'strokeWidth']) {
           if (clip[key] !== undefined) props[key] = clip[key];
         }
       }
 
       if (type === 'ELLIPSE') {
-        for (const key of ['fill', 'radius', 'rx', 'ry']) {
+        for (const key of ['fill', 'radius', 'rx', 'ry',
+          'strokeColor', 'strokeWidth', 'width', 'height']) {
+          if (clip[key] !== undefined) props[key] = clip[key];
+        }
+      }
+
+      if (type === 'POLYGON') {
+        for (const key of ['fill', 'sides', 'radius', 'strokeColor', 'strokeWidth',
+          'width', 'height']) {
           if (clip[key] !== undefined) props[key] = clip[key];
         }
       }
 
       if (type === 'AUDIO' || type === 'VIDEO') {
-        for (const key of ['volume', 'range']) {
+        for (const key of ['volume', 'range', 'muted', 'position']) {
+          if (clip[key] !== undefined) props[key] = clip[key];
+        }
+      }
+
+      if (type === 'IMAGE') {
+        for (const key of ['width', 'height', 'fit']) {
           if (clip[key] !== undefined) props[key] = clip[key];
         }
       }
@@ -195,12 +226,21 @@ function serializeEditorState(state: EditorState): { layers: SerializedLayer[]; 
         props['effects'] = clip['effects'];
       }
 
+      if (Array.isArray(clip['animations']) && (clip['animations'] as unknown[]).length > 0) {
+        props['animations'] = clip['animations'];
+      }
+
       serialized.props = props;
       return serialized;
     });
   }
 
-  return { layers, clips };
+  const colorGrading: Record<string, unknown> = {};
+  for (const [clipId, grading] of state.colorGradingMap) {
+    colorGrading[clipId] = grading;
+  }
+
+  return { layers, clips, colorGrading };
 }
 
 const LAYER_COLORS = [
@@ -215,9 +255,12 @@ export async function restoreProjectState(
 ): Promise<void> {
   composition.clear();
   state.editorLayers.length = 0;
+  state.colorGradingMap.clear();
   state.selectedClipId = null;
   state.selectedLayerId = null;
   state.zoom = project.zoom ?? 80;
+
+  const oldToNewClipId = new Map<string, string>();
 
   for (let li = 0; li < project.layers.length; li++) {
     const layerData = project.layers[li];
@@ -244,6 +287,7 @@ export async function restoreProjectState(
       if (!clip) continue;
       try {
         await layer.add(clip);
+        oldToNewClipId.set(clipData.coreId, clip.id);
         editorLayer.clips.push({
           id: clip.id,
           name: clipData.name,
@@ -258,9 +302,29 @@ export async function restoreProjectState(
     state.editorLayers.push(editorLayer);
   }
 
+  if (project.colorGrading) {
+    for (const [oldClipId, grading] of Object.entries(project.colorGrading)) {
+      const newClipId = oldToNewClipId.get(oldClipId);
+      if (newClipId && grading) {
+        state.colorGradingMap.set(newClipId, grading as import('../editor/color-grading').ColorGrading);
+      }
+    }
+  }
+
   state.emit('layers:change');
   state.emit('timeline:change');
   await composition.seek(0);
+}
+
+function applyPropsToClip(clip: core.Clip, props: Record<string, unknown>): void {
+  const c = clip as unknown as Record<string, unknown>;
+  for (const [key, value] of Object.entries(props)) {
+    try {
+      c[key] = value;
+    } catch {
+      /* skip read-only or unsupported properties */
+    }
+  }
 }
 
 async function recreateClip(data: SerializedClip): Promise<core.Clip | null> {
@@ -270,10 +334,12 @@ async function recreateClip(data: SerializedClip): Promise<core.Clip | null> {
   if (data.duration > 0) timing['duration'] = data.duration;
 
   try {
+    let clip: core.Clip | null = null;
+
     switch (data.type) {
       case 'TEXT':
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new core.TextClip({
+        clip = new core.TextClip({
           ...timing,
           text: String(p['text'] ?? ''),
           x: (p['x'] as string | number) ?? '50%',
@@ -281,14 +347,13 @@ async function recreateClip(data: SerializedClip): Promise<core.Clip | null> {
           fontSize: Number(p['fontSize'] ?? 12),
           align: (p['align'] as 'left' | 'center' | 'right') ?? 'center',
           baseline: (p['baseline'] as 'top' | 'middle' | 'bottom') ?? 'middle',
-          rotation: Number(p['rotation'] ?? 0),
-          opacity: Number(p['opacity'] ?? 100),
         } as any);
+        break;
 
       case 'RECT':
       case 'RECTANGLE':
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new core.RectangleClip({
+        clip = new core.RectangleClip({
           ...timing,
           x: (p['x'] as string | number) ?? '50%',
           y: (p['y'] as string | number) ?? '50%',
@@ -297,38 +362,49 @@ async function recreateClip(data: SerializedClip): Promise<core.Clip | null> {
           fill: String(p['fill'] ?? '#ff0000'),
           radius: Number(p['radius'] ?? 0),
         } as any);
+        break;
 
       case 'ELLIPSE':
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new core.EllipseClip({
+        clip = new core.EllipseClip({
           ...timing,
           x: (p['x'] as string | number) ?? '50%',
           y: (p['y'] as string | number) ?? '50%',
           fill: String(p['fill'] ?? '#ff0000'),
           radius: Number(p['radius'] ?? 100),
         } as any);
+        break;
 
       case 'VIDEO': {
         if (!data.sourceInput) return null;
         const src = await core.Source.from<core.VideoSource>(data.sourceInput);
-        return new core.VideoClip(src, timing as any);
+        clip = new core.VideoClip(src, timing as any);
+        break;
       }
 
       case 'IMAGE': {
         if (!data.sourceInput) return null;
         const src = await core.Source.from<core.ImageSource>(data.sourceInput);
-        return new core.ImageClip(src, timing as any);
+        clip = new core.ImageClip(src, timing as any);
+        break;
       }
 
       case 'AUDIO': {
         if (!data.sourceInput) return null;
         const src = await core.Source.from<core.AudioSource>(data.sourceInput);
-        return new core.AudioClip(src, timing as any);
+        clip = new core.AudioClip(src, timing as any);
+        break;
       }
 
       default:
         return null;
     }
+
+    if (clip) {
+      applyPropsToClip(clip, p);
+    }
+
+    return clip;
   } catch {
     return null;
   }

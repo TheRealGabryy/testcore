@@ -32,6 +32,7 @@ export interface ProjectData extends ProjectMeta {
   layers: SerializedLayer[];
   clips: Record<string, SerializedClip[]>;
   zoom: number;
+  colorGrading?: Record<string, unknown>;
 }
 
 export const RESOLUTION_PRESETS = [
