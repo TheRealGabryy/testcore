@@ -12,6 +12,7 @@ import { setupStudioColorsPanel } from './studio-colors-panel';
 import { initSettings, getSettings as _getSettings } from './settings';
 import { openSettingsPanel } from './settings-panel';
 import { openExportPanel, runExport } from './export-panel';
+import { setupMicroScrub } from './micro-scrub';
 
 export interface EditorConfig {
   onBack: () => void;
@@ -42,6 +43,7 @@ export async function createEditor(config: EditorConfig): Promise<EditorHandle> 
   const kfPropsPanel = document.querySelector('#keyframe-props-panel') as HTMLElement;
   const kfTimelineSection = document.querySelector('#keyframe-timeline-section') as HTMLElement;
   const studioColorsPanel = document.querySelector('#studio-colors-panel') as HTMLElement;
+  const microScrubSection = document.querySelector('#micro-scrub-section') as HTMLElement;
 
   function handleExport() {
     openExportPanel(state, (exportConfig) => {
@@ -148,6 +150,7 @@ export async function createEditor(config: EditorConfig): Promise<EditorHandle> 
     state.emit('grading:change');
   });
   setupAnimationPanel(kfPropsPanel, kfTimelineSection, state);
+  setupMicroScrub(microScrubSection, state);
   setupStudioColorsPanel(studioColorsPanel, state, () => {
     gradingOverlay.update();
     state.emit('grading:change');
